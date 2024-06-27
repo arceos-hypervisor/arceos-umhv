@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+
+members = ["arceos-vmm", "crates/axvm"]
+exclude = ["modules/arceos","guest/nimbos"]
+
+[profile.release]
+lto = true

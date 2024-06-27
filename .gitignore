@@ -1,0 +1,10 @@
+/target
+/.vscode
+.DS_Store
+*.asm
+*.img
+*.bin
+*.elf
+actual.out
+qemu.log
+rusty-tags.vi

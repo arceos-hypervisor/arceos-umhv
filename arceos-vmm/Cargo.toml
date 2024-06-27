@@ -1,0 +1,35 @@
+[package]
+name = "arceos-vmm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Keyang Hu <976929993@qq.com>"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "=0.4.19"
+bitflags = "2.2"
+spin = "0.9"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
+
+# System dependent modules provided by ArceOS.
+axstd = { path = "../arceos/ulib/axstd", features = [
+    "alloc",
+    "paging",
+    "fs",
+    "irq",
+], optional = true }
+axalloc = { path = "../arceos/modules/axalloc" }
+axhal = { path = "../arceos/modules/axhal" }
+
+# System independent crates used for constructing hypervisor.
+axvm = { path = "../crates/axvm" }
+
+# System independent crates provided by ArceOS, these crates could be imported by remote url. 
+axerrno = { path = "../arceos/crates/axerrno" }
+page_table_entry = { path = "../arceos/crates/page_table_entry" }
+memory_addr = { path = "../arceos/crates/memory_addr" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+x86 = "0.52"
+x86_64 = "0.14"
+raw-cpuid = "11.0"
