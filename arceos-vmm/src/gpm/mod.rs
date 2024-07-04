@@ -7,6 +7,9 @@ use axvm::{AxNestedPageTable, GuestPhysAddr, HostPhysAddr};
 use memory_addr::{is_aligned_4k, VirtAddr, PAGE_SIZE_4K as PAGE_SIZE};
 use page_table_entry::MappingFlags;
 
+mod arch; 
+pub use arch::setup_gpm;
+
 type NestedPageTable = AxNestedPageTable<PagingIfImpl>;
 
 #[derive(Debug)]

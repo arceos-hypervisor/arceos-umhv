@@ -3,7 +3,7 @@
 #![feature(concat_idents)]
 #![feature(naked_functions)]
 #![feature(const_trait_impl)]
-
+#![feature(riscv_ext_intrinsics)]
 extern crate alloc;
 #[macro_use]
 extern crate log;

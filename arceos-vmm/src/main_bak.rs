@@ -23,7 +23,7 @@ use axvm::{AxvmPerCpu, GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 use page_table_entry::MappingFlags;
 
 use self::gconfig::*;
-use self::gpm::{GuestMemoryRegion, GuestPhysMemorySet, setup_gpm};
+use self::gpm::{GuestMemoryRegion, GuestPhysMemorySet};
 use self::hal::AxvmHalImpl;
 
 
