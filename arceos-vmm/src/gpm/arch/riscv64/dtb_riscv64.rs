@@ -39,7 +39,7 @@ impl MachineMeta {
             if let Some(reg) = node.reg().and_then(|mut reg| reg.next()) {
                 let paddr = reg.starting_address as usize;
                 let size = reg.size.unwrap();
-                libax::debug!("virtio mmio addr: {:#x}, size: {:#x}", paddr, size);
+                debug!("virtio mmio addr: {:#x}, size: {:#x}", paddr, size);
                 meta.virtio.push(Device {
                     base_address: paddr,
                     size,
@@ -53,7 +53,7 @@ impl MachineMeta {
             if let Some(reg) = node.reg().and_then(|mut reg| reg.next()) {
                 let base_addr = reg.starting_address as usize;
                 let size = reg.size.unwrap();
-                libax::debug!("test addr: {:#x}, size: {:#x}", base_addr, size);
+                debug!("test addr: {:#x}, size: {:#x}", base_addr, size);
                 meta.test_finisher_address = Some(Device {
                     base_address: base_addr,
                     size,
@@ -66,7 +66,7 @@ impl MachineMeta {
             if let Some(reg) = node.reg().and_then(|mut reg| reg.next()) {
                 let base_addr = reg.starting_address as usize;
                 let size = reg.size.unwrap();
-                libax::debug!("UART addr: {:#x}, size: {:#x}", base_addr, size);
+                debug!("UART addr: {:#x}, size: {:#x}", base_addr, size);
                 meta.uart = Some(Device {
                     base_address: base_addr,
                     size,
@@ -79,7 +79,7 @@ impl MachineMeta {
             if let Some(reg) = node.reg().and_then(|mut reg| reg.next()) {
                 let base_addr = reg.starting_address as usize;
                 let size = reg.size.unwrap();
-                libax::debug!("CLINT addr: {:#x}, size: {:#x}", base_addr, size);
+                debug!("CLINT addr: {:#x}, size: {:#x}", base_addr, size);
                 meta.clint = Some(Device {
                     base_address: base_addr,
                     size,
@@ -92,7 +92,7 @@ impl MachineMeta {
             if let Some(reg) = node.reg().and_then(|mut reg| reg.next()) {
                 let base_addr = reg.starting_address as usize;
                 let size = reg.size.unwrap();
-                libax::debug!("PLIC addr: {:#x}, size: {:#x}", base_addr, size);
+                debug!("PLIC addr: {:#x}, size: {:#x}", base_addr, size);
                 meta.plic = Some(Device {
                     base_address: base_addr,
                     size,
@@ -104,7 +104,7 @@ impl MachineMeta {
             if let Some(reg) = node.reg().and_then(|mut reg| reg.next()) {
                 let base_addr = reg.starting_address as usize;
                 let size = reg.size.unwrap();
-                libax::debug!("PCI addr: {:#x}, size: {:#x}", base_addr, size);
+                debug!("PCI addr: {:#x}, size: {:#x}", base_addr, size);
                 meta.pci = Some(Device {
                     base_address: base_addr,
                     size,

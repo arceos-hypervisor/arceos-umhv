@@ -9,6 +9,7 @@ use page_table_entry::MappingFlags;
 
 mod arch; 
 pub use arch::setup_gpm;
+pub use arch::GUEST_ENTRY;
 
 type NestedPageTable = AxNestedPageTable<PagingIfImpl>;
 

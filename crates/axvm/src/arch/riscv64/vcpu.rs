@@ -8,16 +8,18 @@ use axerrno::AxResult;
 // use alloc::sync::Arc;
 use riscv::register::{htinst, htval, hvip, scause, sstatus, stval};
 
-use super::vmexit::{PrivilegeLevel, VmExitInfo};
-use super::csrs::{traps, RiscvCsrTrait, CSR, };
-use super::sbi::SbiMessage;
+use super::csrs::{traps, RiscvCsrTrait, CSR};
+use super::sbi::{SbiMessage,PmuFunction, BaseFunction, RemoteFenceFunction};
 use crate::{
-    GuestPhysAddr, GuestVirtAddr, HostPhysAddr, AxvmHal, 
+    GuestPhysAddr, GuestVirtAddr, HostPhysAddr, AxVMHal, 
 };
+use crate::vcpu::AxArchVCpuExitReason;
 
 use super::csrs::defs::hstatus;
 use super::regs::{GeneralPurposeRegisters, GprIndex};
 use super::PerCpu;
+use super::vmexit::VmExitInfo;
+use sbi_rt::{pmu_counter_get_info, pmu_counter_stop};
 
 /// Hypervisor GPR and CSR state which must be saved/restored when entering/exiting virtualization.
 #[derive(Default)]
@@ -34,12 +36,12 @@ struct HypervisorCpuState {
 /// Guest GPR and CSR state which must be saved/restored when exiting/entering virtualization.
 #[derive(Default)]
 #[repr(C)]
-struct GuestCpuState {
-    gprs: GeneralPurposeRegisters,
-    sstatus: usize,
-    hstatus: usize,
-    scounteren: usize,
-    sepc: usize,
+pub struct GuestCpuState {
+    pub gprs: GeneralPurposeRegisters,
+    pub sstatus: usize,
+    pub hstatus: usize,
+    pub scounteren: usize,
+    pub sepc: usize,
 }
 
 /// The CSRs that are only in effect when virtualization is enabled (V=1) and must be saved and
@@ -88,7 +90,7 @@ pub struct VmCpuRegisters {
     // CPU state that's shared between our's and the guest's execution environment. Saved/restored
     // when entering/exiting a VM.
     hyp_regs: HypervisorCpuState,
-    guest_regs: GuestCpuState,
+    pub guest_regs: GuestCpuState,
 
     // CPU state that only applies when V=1, e.g. the VS-level CSRs. Saved/restored on activation of
     // the vCPU.
@@ -98,7 +100,7 @@ pub struct VmCpuRegisters {
     virtual_hs_csrs: GuestVirtualHsCsrs,
 
     // Read on VM exit.
-    trap_csrs: VmCpuTrapState,
+    pub trap_csrs: VmCpuTrapState,
 }
 
 #[allow(dead_code)]
@@ -211,23 +213,22 @@ pub enum VmCpuStatus {
     Running,
 }
 
+/// The architecture dependent configuration of a `AxArchVCpu`.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct VCpuConfig {}
+
 #[derive(Default)]
 /// A virtual CPU within a guest
-pub struct VCpu<H: AxvmHal> {
-    vcpu_id: usize,
+pub struct VCpu<H: AxVMHal> {
     regs: VmCpuRegisters,
     // gpt: G,
     // pub guest: Arc<Guest>,
     marker: PhantomData<H>,
 }
 
-impl<H: AxvmHal> VCpu<H> {
-    /// Create a new vCPU
-    pub(crate) fn new(
-        percpu: &PerCpu<H>,
-        entry: GuestPhysAddr,
-        ept_root: HostPhysAddr,
-    ) -> AxResult<Self> {
+impl<H: AxVMHal> VCpu<H> {
+
+    pub fn new(_config: VCpuConfig) -> AxResult<Self> {
         let mut regs = VmCpuRegisters::default();
         // Set hstatus
         let mut hstatus = LocalRegisterCopy::<usize, hstatus::Register>::new(
@@ -247,109 +248,51 @@ impl<H: AxvmHal> VCpu<H> {
         regs.guest_regs.gprs.set_reg(GprIndex::A0, 0);
         regs.guest_regs.gprs.set_reg(GprIndex::A1, 0x9000_0000);
 
-        // Set entry
-        regs.guest_regs.sepc = entry;
-        regs.virtual_hs_csrs.hgatp = 8usize << 60 | usize::from(ept_root) >> 12;
-        unsafe {
-            core::arch::asm!(
-                "csrw hgatp, {hgatp}",
-                hgatp = in(reg) regs.virtual_hs_csrs.hgatp,
-            );
-            core::arch::riscv64::hfence_gvma_all();
-        }
-
-
         Ok(Self {
-            vcpu_id: 0,
             regs: regs,
-            // gpt,
-            marker: PhantomData,
+            marker: core::marker::PhantomData,
         })
     }
 
-
-    /// Restore vCPU registers from the guest's GPRs
-    pub fn restore_gprs(&mut self, gprs: &GeneralPurposeRegisters) {
-        for index in 0..32 {
-            self.regs.guest_regs.gprs.set_reg(
-                GprIndex::from_raw(index).unwrap(),
-                gprs.reg(GprIndex::from_raw(index).unwrap()),
-            )
-        }
+    pub fn set_entry(&mut self, entry: GuestPhysAddr) -> AxResult {
+        let regs = &mut self.regs;
+        regs.guest_regs.sepc = entry;
+        Ok(())
     }
 
-    /// Save vCPU registers to the guest's GPRs
-    pub fn save_gprs(&self, gprs: &mut GeneralPurposeRegisters) {
-        for index in 0..32 {
-            gprs.set_reg(
-                GprIndex::from_raw(index).unwrap(),
-                self.regs
-                    .guest_regs
-                    .gprs
-                    .reg(GprIndex::from_raw(index).unwrap()),
+    pub fn set_ept_root(&mut self, ept_root: HostPhysAddr) -> AxResult {
+        self.regs.virtual_hs_csrs.hgatp = 8usize << 60 | usize::from(ept_root) >> 12;
+        unsafe {
+            core::arch::asm!(
+                "csrw hgatp, {hgatp}",
+                hgatp = in(reg) self.regs.virtual_hs_csrs.hgatp,
             );
+            core::arch::riscv64::hfence_gvma_all();
         }
+        Ok(())
     }
 
-    /// Runs this vCPU until traps.
-    pub fn run(&mut self) -> VmExitInfo {
+    pub fn run(&mut self) -> AxResult<AxArchVCpuExitReason> {
         let regs = &mut self.regs;
         unsafe {
             // Safe to run the guest as it only touches memory assigned to it by being owned
             // by its page table
             _run_guest(regs);
         }
-        // Save off the trap information
-        regs.trap_csrs.scause = scause::read().bits();
-        regs.trap_csrs.stval = stval::read();
-        regs.trap_csrs.htval = htval::read();
-        regs.trap_csrs.htinst = htinst::read();
-
-        let scause = scause::read();
-        use scause::{Exception, Interrupt, Trap};
-        match scause.cause() {
-            Trap::Exception(Exception::VirtualSupervisorEnvCall) => {
-                let sbi_msg = SbiMessage::from_regs(regs.guest_regs.gprs.a_regs()).ok();
-                VmExitInfo::Ecall(sbi_msg)
-            }
-            Trap::Interrupt(Interrupt::SupervisorTimer) => VmExitInfo::TimerInterruptEmulation,
-            Trap::Interrupt(Interrupt::SupervisorExternal) => {
-                VmExitInfo::ExternalInterruptEmulation
-            }
-            Trap::Exception(Exception::LoadGuestPageFault)
-            | Trap::Exception(Exception::StoreGuestPageFault) => {
-                let fault_addr = regs.trap_csrs.htval << 2 | regs.trap_csrs.stval & 0x3;
-                // debug!(
-                //     "fault_addr: {:#x}, htval: {:#x}, stval: {:#x}, sepc: {:#x}, scause: {:?}",
-                //     fault_addr,
-                //     regs.trap_csrs.htval,
-                //     regs.trap_csrs.stval,
-                //     regs.guest_regs.sepc,
-                //     scause.cause()
-                // );
-                VmExitInfo::PageFault {
-                    fault_addr,
-                    // Note that this address is not necessarily guest virtual as the guest may or
-                    // may not have 1st-stage translation enabled in VSATP. We still use GuestVirtAddr
-                    // here though to distinguish it from addresses (e.g. in HTVAL, or passed via a
-                    // TEECALL) which are exclusively guest-physical. Furthermore we only access guest
-                    // instructions via the HLVX instruction, which will take the VSATP translation
-                    // mode into account.
-                    falut_pc: regs.guest_regs.sepc,
-                    inst: regs.trap_csrs.htinst as u32,
-                    priv_level: PrivilegeLevel::from_hstatus(regs.guest_regs.hstatus),
-                }
-            }
-            _ => {
-                panic!(
-                    "Unhandled trap: {:?}, sepc: {:#x}, stval: {:#x}",
-                    scause.cause(),
-                    regs.guest_regs.sepc,
-                    regs.trap_csrs.stval
-                );
-            }
-        }
+        self.vmexit_handler()
     }
+
+    pub fn bind(&mut self) -> AxResult {
+        unimplemented!()
+    }
+
+    pub fn unbind(&mut self) -> AxResult {
+        unimplemented!()
+    }
+
+}
+
+impl<H: AxVMHal> VCpu<H> {
 
     /// Gets one of the vCPU's general purpose registers.
     pub fn get_gpr(&self, index: GprIndex) -> usize {
@@ -366,19 +309,222 @@ impl<H: AxvmHal> VCpu<H> {
         self.regs.guest_regs.sepc += instr_len
     }
 
-    /// Gets the vCPU's id.
-    pub fn vcpu_id(&self) -> usize {
-        self.vcpu_id
-    }
-
     /// Gets the vCPU's registers.
     pub fn regs(&mut self) -> &mut VmCpuRegisters {
         &mut self.regs
     }
 }
 
+impl<H: AxVMHal> VCpu<H> {
+    fn vmexit_handler(&mut self) -> AxResult<AxArchVCpuExitReason> {
+        self.regs.trap_csrs.scause = scause::read().bits();
+        self.regs.trap_csrs.stval = stval::read();
+        self.regs.trap_csrs.htval = htval::read();
+        self.regs.trap_csrs.htinst = htinst::read();
+
+        let scause = scause::read();
+        use scause::{Exception, Interrupt, Trap};
+        match scause.cause() {
+            Trap::Exception(Exception::VirtualSupervisorEnvCall) => {
+                let sbi_msg = SbiMessage::from_regs(self.regs.guest_regs.gprs.a_regs()).ok();
+                if let Some(sbi_msg) = sbi_msg {
+                    match sbi_msg {
+                        SbiMessage::Base(base) => {
+                            self.handle_base_function(base).unwrap();
+                        }
+                        SbiMessage::GetChar => {
+                            let c = sbi_rt::legacy::console_getchar();
+                            self.set_gpr(GprIndex::A0, c);
+                        }
+                        SbiMessage::PutChar(c) => {
+                            sbi_rt::legacy::console_putchar(c);
+                        }
+                        SbiMessage::SetTimer(timer) => {
+                            sbi_rt::set_timer(timer as u64);
+                            // Clear guest timer interrupt
+                            CSR.hvip.read_and_clear_bits(
+                                traps::interrupt::VIRTUAL_SUPERVISOR_TIMER,
+                            );
+                            //  Enable host timer interrupt
+                            CSR.sie
+                                .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
+                        }
+                        SbiMessage::Reset(_) => {
+                            sbi_rt::system_reset(sbi_rt::Shutdown, sbi_rt::SystemFailure);
+                        }
+                        SbiMessage::RemoteFence(rfnc) => {
+                            self.handle_rfnc_function(rfnc).unwrap();
+                        }
+                        SbiMessage::PMU(pmu) => {
+                            self.handle_pmu_function(pmu).unwrap();
+                        }
+                        _ => todo!(),
+                    }
+                    self.advance_pc(4);
+                    Ok(AxArchVCpuExitReason::ArchVCpuExitReason)
+                } else {
+                    panic!()
+                }
+            }
+            Trap::Interrupt(Interrupt::SupervisorTimer) => {
+                // debug!("timer irq emulation");
+                // Enable guest timer interrupt
+                CSR.hvip
+                    .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
+                // Clear host timer interrupt
+                CSR.sie
+                    .read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
+                Ok(AxArchVCpuExitReason::ArchVCpuExitReason)
+            }
+            Trap::Interrupt(Interrupt::SupervisorExternal) => {
+                Ok(AxArchVCpuExitReason::ExternalInterruptEmulation)
+            }
+            Trap::Exception(Exception::LoadGuestPageFault)
+            | Trap::Exception(Exception::StoreGuestPageFault) => {
+                // let fault_addr = self.regs.trap_csrs.htval << 2 | self.regs.trap_csrs.stval & 0x3;
+                // debug!(
+                //     "fault_addr: {:#x}, htval: {:#x}, stval: {:#x}, sepc: {:#x}, scause: {:?}",
+                //     fault_addr,
+                //     regs.trap_csrs.htval,
+                //     regs.trap_csrs.stval,
+                //     regs.guest_regs.sepc,
+                //     scause.cause()
+                // );
+                // VmExitInfo::PageFault {
+                //     fault_addr,
+                //     // Note that this address is not necessarily guest virtual as the guest may or
+                //     // may not have 1st-stage translation enabled in VSATP. We still use GuestVirtAddr
+                //     // here though to distinguish it from addresses (e.g. in HTVAL, or passed via a
+                //     // TEECALL) which are exclusively guest-physical. Furthermore we only access guest
+                //     // instructions via the HLVX instruction, which will take the VSATP translation
+                //     // mode into account.
+                //     falut_pc: regs.guest_regs.sepc,
+                //     inst: regs.trap_csrs.htinst as u32,
+                //     priv_level: PrivilegeLevel::from_hstatus(regs.guest_regs.hstatus),
+                // }
+                Ok(AxArchVCpuExitReason::PageFault)
+            }
+            _ => {
+                panic!(
+                    "Unhandled trap: {:?}, sepc: {:#x}, stval: {:#x}",
+                    scause.cause(),
+                    self.regs.guest_regs.sepc,
+                    self.regs.trap_csrs.stval
+                );
+            }
+        }
+
+    }
+
+    fn handle_base_function(
+        &mut self,
+        base: BaseFunction,
+    ) -> AxResult<()> {
+        match base {
+            BaseFunction::GetSepcificationVersion => {
+                let version = sbi_rt::get_spec_version();
+                self.set_gpr(GprIndex::A1, version.major() << 24 | version.minor());
+                debug!(
+                    "GetSepcificationVersion: {}",
+                    version.major() << 24 | version.minor()
+                );
+            }
+            BaseFunction::GetImplementationID => {
+                let id = sbi_rt::get_sbi_impl_id();
+                self.set_gpr(GprIndex::A1, id);
+            }
+            BaseFunction::GetImplementationVersion => {
+                let impl_version = sbi_rt::get_sbi_impl_version();
+                self.set_gpr(GprIndex::A1, impl_version);
+            }
+            BaseFunction::ProbeSbiExtension(extension) => {
+                let extension = sbi_rt::probe_extension(extension as usize).raw;
+                self.set_gpr(GprIndex::A1, extension);
+            }
+            BaseFunction::GetMachineVendorID => {
+                let mvendorid = sbi_rt::get_mvendorid();
+                self.set_gpr(GprIndex::A1, mvendorid);
+            }
+            BaseFunction::GetMachineArchitectureID => {
+                let marchid = sbi_rt::get_marchid();
+                self.set_gpr(GprIndex::A1, marchid);
+            }
+            BaseFunction::GetMachineImplementationID => {
+                let mimpid = sbi_rt::get_mimpid();
+                self.set_gpr(GprIndex::A1, mimpid);
+            }
+        }
+        self.set_gpr(GprIndex::A0, 0);
+        Ok(())
+    }
+
+    fn handle_rfnc_function(
+        &mut self,
+        rfnc: RemoteFenceFunction,
+    ) -> AxResult<()> {
+        self.set_gpr(GprIndex::A0, 0);
+        match rfnc {
+            RemoteFenceFunction::FenceI {
+                hart_mask,
+                hart_mask_base,
+            } => {
+                let sbi_ret = sbi_rt::remote_fence_i(hart_mask as usize, hart_mask_base as usize);
+                self.set_gpr(GprIndex::A0, sbi_ret.error);
+                self.set_gpr(GprIndex::A1, sbi_ret.value);
+            }
+            RemoteFenceFunction::RemoteSFenceVMA {
+                hart_mask,
+                hart_mask_base,
+                start_addr,
+                size,
+            } => {
+                let sbi_ret = sbi_rt::remote_sfence_vma(
+                    hart_mask as usize,
+                    hart_mask_base as usize,
+                    start_addr as usize,
+                    size as usize,
+                );
+                self.set_gpr(GprIndex::A0, sbi_ret.error);
+                self.set_gpr(GprIndex::A1, sbi_ret.value);
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_pmu_function(
+        &mut self,
+        pmu: PmuFunction,
+    ) -> AxResult<()> {
+        self.set_gpr(GprIndex::A0, 0);
+        match pmu {
+            PmuFunction::GetNumCounters => self.set_gpr(GprIndex::A1, sbi_rt::pmu_num_counters()),
+            PmuFunction::GetCounterInfo(counter_index) => {
+                let sbi_ret = pmu_counter_get_info(counter_index as usize);
+                self.set_gpr(GprIndex::A0, sbi_ret.error);
+                self.set_gpr(GprIndex::A1, sbi_ret.value);
+            }
+            PmuFunction::StopCounter {
+                counter_index,
+                counter_mask,
+                stop_flags,
+            } => {
+                let sbi_ret = pmu_counter_stop(
+                    counter_index as usize,
+                    counter_mask as usize,
+                    stop_flags as usize,
+                );
+                self.set_gpr(GprIndex::A0, sbi_ret.error);
+                self.set_gpr(GprIndex::A1, sbi_ret.value);
+            }
+        }
+        Ok(())
+    }
+
+    
+}
+
 // Private methods implements
-impl<H: AxvmHal> VCpu<H> {
+impl<H: AxVMHal> VCpu<H> {
     /// Delivers the given exception to the vCPU, setting its register state
     /// to handle the trap the next time it is run.
     fn inject_exception(&mut self) {

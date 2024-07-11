@@ -1,16 +1,18 @@
+mod dtb_riscv64;
+
 use axerrno::{AxError, AxResult};
 use axhal::mem::virt_to_phys;
 use axvm::{GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 use page_table_entry::MappingFlags;
 use axalloc::GlobalPage;
+use self::dtb_riscv64::MachineMeta;
 
-use crate::gconfig::*;
 use crate::gpm::{GuestMemoryRegion, GuestPhysMemorySet};
 
 pub const GUEST_PHYS_MEMORY_BASE: GuestPhysAddr = 0x9000_0000;
 pub const DTB_ENTRY: GuestPhysAddr = 0x9000_0000;
 pub const GUEST_ENTRY: GuestPhysAddr = 0x9020_0000;
-pub const GUEST_PHYS_MEMORY_SIZE: usize = 0x800_0000; // 128M
+pub const GUEST_PHYS_MEMORY_SIZE: usize = 0x400_0000; // 64M
 
 #[repr(align(4096))]
 struct AlignedMemory<const LEN: usize>([u8; LEN]);
@@ -67,7 +69,7 @@ pub fn setup_gpm() -> AxResult<GuestPhysMemorySet> {
         gpm.map_region(
             GuestMemoryRegion {
                 gpa: test.base_address,
-                hpa: test.base_address,
+                hpa: test.base_address.into(),
                 size: test.size + 0x1000,
                 flags: MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER | MappingFlags::EXECUTE,
             }.into()
@@ -77,7 +79,7 @@ pub fn setup_gpm() -> AxResult<GuestPhysMemorySet> {
         gpm.map_region(
             GuestMemoryRegion {
                 gpa: virtio.base_address,
-                hpa: virtio.base_address,
+                hpa: virtio.base_address.into(),
                 size: virtio.size,
                 flags: MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             }.into()
@@ -88,7 +90,7 @@ pub fn setup_gpm() -> AxResult<GuestPhysMemorySet> {
         gpm.map_region(
             GuestMemoryRegion {
                 gpa: uart.base_address,
-                hpa: uart.base_address,
+                hpa: uart.base_address.into(),
                 size: 0x1000,
                 flags: MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             }.into()
@@ -99,7 +101,7 @@ pub fn setup_gpm() -> AxResult<GuestPhysMemorySet> {
         gpm.map_region(
             GuestMemoryRegion {
                 gpa: clint.base_address,
-                hpa: clint.base_address,
+                hpa: clint.base_address.into(),
                 size: clint.size,
                 flags: MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             }.into()
@@ -107,10 +109,10 @@ pub fn setup_gpm() -> AxResult<GuestPhysMemorySet> {
     }
 
     if let Some(plic) = meta.plic {
-        gpt.map_region(
+        gpm.map_region(
             GuestMemoryRegion {
                 gpa: plic.base_address,
-                hpa: plic.base_address,
+                hpa: plic.base_address.into(),
                 size: 0x20_0000,
                 flags: MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             }.into()
@@ -121,7 +123,7 @@ pub fn setup_gpm() -> AxResult<GuestPhysMemorySet> {
         gpm.map_region(
             GuestMemoryRegion {
                 gpa: pci.base_address,
-                hpa: pci.base_address,
+                hpa: pci.base_address.into(),
                 size: pci.size,
                 flags: MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             }.into()

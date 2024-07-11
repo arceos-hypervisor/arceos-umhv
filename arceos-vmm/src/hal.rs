@@ -1,10 +1,10 @@
-use super::vmexit;
-use axvm::{AxvmHal, AxvmVcpu, HostPhysAddr, HostVirtAddr};
+// use super::vmexit;
+use axvm::{AxVMHal, AxVCpu, HostPhysAddr, HostVirtAddr};
 use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
 
 pub struct AxvmHalImpl;
 
-impl AxvmHal for AxvmHalImpl {
+impl AxVMHal for AxvmHalImpl {
     fn alloc_page() -> Option<HostPhysAddr> {
         axalloc::global_allocator()
             .alloc_pages(1, PAGE_SIZE)
@@ -24,8 +24,8 @@ impl AxvmHal for AxvmHalImpl {
         axhal::mem::virt_to_phys(vaddr)
     }
 
-    fn vmexit_handler(vcpu: &mut AxvmVcpu<Self>) {
-        vmexit::vmexit_handler(vcpu).unwrap()
+    fn vmexit_handler(vcpu: &mut AxVCpu<Self>) {
+        todo!()
     }
 
     fn current_time_nanos() -> u64 {

@@ -21,6 +21,7 @@ axstd = { path = "../arceos/ulib/axstd", features = [
 ], optional = true }
 axalloc = { path = "../arceos/modules/axalloc" }
 axhal = { path = "../arceos/modules/axhal" }
+percpu = { path = "../arceos/crates/percpu" } 
 
 # System independent crates used for constructing hypervisor.
 axvm = { path = "../crates/axvm" }

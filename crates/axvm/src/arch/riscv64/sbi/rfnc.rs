@@ -1,6 +1,6 @@
 use sbi_spec::rfnc::{REMOTE_FENCE_I, REMOTE_SFENCE_VMA};
 
-use crate::AxResult;
+use axerrno::AxResult;
 
 #[derive(Clone, Copy, Debug)]
 pub enum RemoteFenceFunction {
