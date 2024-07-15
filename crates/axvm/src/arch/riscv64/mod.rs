@@ -27,6 +27,10 @@ pub struct PerCpu<H: AxVMHal> {
 
 impl<H: AxVMHal> PerCpu<H> {
     pub fn new(_cpu_id: usize) -> Self {
+        unsafe {
+            setup_csrs();
+        }
+        
         Self {
             _marker: core::marker::PhantomData,
         }
@@ -38,9 +42,6 @@ impl<H: AxVMHal> PerCpu<H> {
 
     pub fn hardware_enable(&mut self) -> AxResult<()> {
         if has_hardware_support() {
-            unsafe {
-                setup_csrs();
-            }
             Ok(())
         } else {
             Err(AxError::Unsupported)

@@ -229,17 +229,11 @@ impl<H: AxVMHal> AxVCpu<H> {
     }
 
     pub fn run(&self) -> AxResult<AxArchVCpuExitReason> {
-        info!("1");
         self.transition_state(VCpuState::Ready, VCpuState::Running)?;
-        info!("2");
         set_current_vcpu(&self);
-        info!("3");
         let result = self.get_arch_vcpu().run()?;
-        info!("4");
         clear_current_vcpu::<H>();
-        info!("5");
         self.transition_state(VCpuState::Running, VCpuState::Ready)?;
-        info!("6");
         Ok(result)
     }
 
