@@ -1,9 +1,9 @@
 use alloc::{format, sync::Weak};
 // use spinlock::{SpinNoIrq, SpinNoIrqGuard};
+use crate::{arch::AxArchVCpu, config::AxVCpuConfig, AxVM, AxVMHal, GuestPhysAddr};
+use axerrno::AxError;
 use axerrno::{ax_err, ax_err_type, AxResult};
 use core::cell::{RefCell, UnsafeCell};
-use axerrno::AxError;
-use crate::{arch::AxArchVCpu, config::AxVCpuConfig, AxVM, AxVMHal, GuestPhysAddr};
 
 /// The constant part of `AxVCpu`.
 struct AxVCpuInnerConst<H: AxVMHal> {
@@ -140,8 +140,6 @@ pub struct AxVCpu<H: AxVMHal> {
     arch_vcpu: UnsafeCell<AxArchVCpu<H>>,
 }
 
-
-
 impl<H: AxVMHal> AxVCpu<H> {
     pub fn new(
         config: AxVCpuConfig,
@@ -169,12 +167,12 @@ impl<H: AxVMHal> AxVCpu<H> {
     }
 
     pub fn init(&self) -> AxResult {
-        info!("{:?}",self.vm().upgrade().is_none());
+        info!("{:?}", self.vm().upgrade().is_none());
 
         // let vm = self
         //     .vm()
         //     .upgrade();
-            // .ok_or(ax_err_type!(BadState, "VM is dropped"))?;
+        // .ok_or(ax_err_type!(BadState, "VM is dropped"))?;
         let vm = match self.vm().upgrade() {
             Some(v) => v,
             _ => {
@@ -253,19 +251,31 @@ static mut CURRENT_VCPU: Option<*mut u8> = None;
 
 pub fn get_current_vcpu<H: AxVMHal>() -> Option<&'static AxVCpu<H>> {
     unsafe {
-        CURRENT_VCPU.current_ref_raw().as_ref().copied().map(|p| (p as *const AxVCpu<H>).as_ref()).flatten()
+        CURRENT_VCPU
+            .current_ref_raw()
+            .as_ref()
+            .copied()
+            .map(|p| (p as *const AxVCpu<H>).as_ref())
+            .flatten()
     }
 }
 
 pub fn get_current_vcpu_mut<H: AxVMHal>() -> Option<&'static mut AxVCpu<H>> {
     unsafe {
-        CURRENT_VCPU.current_ref_mut_raw().as_mut().copied().map(|p| (p as *mut AxVCpu<H>).as_mut()).flatten()
+        CURRENT_VCPU
+            .current_ref_mut_raw()
+            .as_mut()
+            .copied()
+            .map(|p| (p as *mut AxVCpu<H>).as_mut())
+            .flatten()
     }
 }
 
 pub fn set_current_vcpu<H: AxVMHal>(vcpu: &AxVCpu<H>) {
     unsafe {
-        CURRENT_VCPU.current_ref_mut_raw().replace(vcpu as *const _ as *mut u8);
+        CURRENT_VCPU
+            .current_ref_mut_raw()
+            .replace(vcpu as *const _ as *mut u8);
     }
 }
 

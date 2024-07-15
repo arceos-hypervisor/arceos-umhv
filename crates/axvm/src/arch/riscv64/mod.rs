@@ -1,25 +1,23 @@
-mod detect;
 pub mod csrs;
-mod vcpu;
+mod detect;
+mod device_list;
+mod devices;
 mod regs;
 pub mod sbi;
-mod devices;
-mod vmexit;
+mod vcpu;
 mod vm_pages;
-mod device_list;
+mod vmexit;
 
+use self::csrs::{traps, RiscvCsrTrait, CSR};
 pub(crate) use self::detect::detect_h_extension as has_hardware_support;
-pub use self::PerCpu as AxArchPerCpuState;
+pub use self::device_list::DeviceList as AxArchDeviceList;
 pub use self::vcpu::VCpu as AxArchVCpu;
 pub use self::vcpu::VCpuConfig as AxArchVCpuConfig;
-pub use self::device_list::DeviceList as AxArchDeviceList;
-use self::csrs::{CSR, traps, RiscvCsrTrait};
-use axerrno::AxResult;
+pub use self::PerCpu as AxArchPerCpuState;
 use axerrno::AxError;
+use axerrno::AxResult;
 
-use crate::{
-    AxVMHal,
-};
+use crate::AxVMHal;
 
 pub struct PerCpu<H: AxVMHal> {
     _marker: core::marker::PhantomData<H>,
@@ -30,7 +28,7 @@ impl<H: AxVMHal> PerCpu<H> {
         unsafe {
             setup_csrs();
         }
-        
+
         Self {
             _marker: core::marker::PhantomData,
         }

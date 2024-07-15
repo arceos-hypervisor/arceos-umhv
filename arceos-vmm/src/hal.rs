@@ -1,5 +1,5 @@
 // use super::vmexit;
-use axvm::{AxVMHal, AxVCpu, HostPhysAddr, HostVirtAddr};
+use axvm::{AxVCpu, AxVMHal, HostPhysAddr, HostVirtAddr};
 use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
 
 pub struct AxvmHalImpl;

@@ -1,24 +1,22 @@
 use alloc::boxed::Box;
+use axerrno::AxResult;
 use core::arch::global_asm;
 use core::marker::PhantomData;
 use core::mem::size_of;
 use memoffset::offset_of;
 use tock_registers::LocalRegisterCopy;
-use axerrno::AxResult;
 // use alloc::sync::Arc;
 use riscv::register::{htinst, htval, hvip, scause, sstatus, stval};
 
 use super::csrs::{traps, RiscvCsrTrait, CSR};
-use super::sbi::{SbiMessage,PmuFunction, BaseFunction, RemoteFenceFunction};
-use crate::{
-    GuestPhysAddr, GuestVirtAddr, HostPhysAddr, AxVMHal, 
-};
+use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::vcpu::AxArchVCpuExitReason;
+use crate::{AxVMHal, GuestPhysAddr, GuestVirtAddr, HostPhysAddr};
 
 use super::csrs::defs::hstatus;
 use super::regs::{GeneralPurposeRegisters, GprIndex};
-use super::PerCpu;
 use super::vmexit::VmExitInfo;
+use super::PerCpu;
 use sbi_rt::{pmu_counter_get_info, pmu_counter_stop};
 
 /// Hypervisor GPR and CSR state which must be saved/restored when entering/exiting virtualization.
@@ -227,7 +225,6 @@ pub struct VCpu<H: AxVMHal> {
 }
 
 impl<H: AxVMHal> VCpu<H> {
-
     pub fn new(_config: VCpuConfig) -> AxResult<Self> {
         let mut regs = VmCpuRegisters::default();
         // Set hstatus
@@ -289,11 +286,9 @@ impl<H: AxVMHal> VCpu<H> {
     pub fn unbind(&mut self) -> AxResult {
         unimplemented!()
     }
-
 }
 
 impl<H: AxVMHal> VCpu<H> {
-
     /// Gets one of the vCPU's general purpose registers.
     pub fn get_gpr(&self, index: GprIndex) -> usize {
         self.regs.guest_regs.gprs.reg(index)
@@ -342,9 +337,8 @@ impl<H: AxVMHal> VCpu<H> {
                         SbiMessage::SetTimer(timer) => {
                             sbi_rt::set_timer(timer as u64);
                             // Clear guest timer interrupt
-                            CSR.hvip.read_and_clear_bits(
-                                traps::interrupt::VIRTUAL_SUPERVISOR_TIMER,
-                            );
+                            CSR.hvip
+                                .read_and_clear_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
                             //  Enable host timer interrupt
                             CSR.sie
                                 .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
@@ -413,13 +407,9 @@ impl<H: AxVMHal> VCpu<H> {
                 );
             }
         }
-
     }
 
-    fn handle_base_function(
-        &mut self,
-        base: BaseFunction,
-    ) -> AxResult<()> {
+    fn handle_base_function(&mut self, base: BaseFunction) -> AxResult<()> {
         match base {
             BaseFunction::GetSepcificationVersion => {
                 let version = sbi_rt::get_spec_version();
@@ -458,10 +448,7 @@ impl<H: AxVMHal> VCpu<H> {
         Ok(())
     }
 
-    fn handle_rfnc_function(
-        &mut self,
-        rfnc: RemoteFenceFunction,
-    ) -> AxResult<()> {
+    fn handle_rfnc_function(&mut self, rfnc: RemoteFenceFunction) -> AxResult<()> {
         self.set_gpr(GprIndex::A0, 0);
         match rfnc {
             RemoteFenceFunction::FenceI {
@@ -491,10 +478,7 @@ impl<H: AxVMHal> VCpu<H> {
         Ok(())
     }
 
-    fn handle_pmu_function(
-        &mut self,
-        pmu: PmuFunction,
-    ) -> AxResult<()> {
+    fn handle_pmu_function(&mut self, pmu: PmuFunction) -> AxResult<()> {
         self.set_gpr(GprIndex::A0, 0);
         match pmu {
             PmuFunction::GetNumCounters => self.set_gpr(GprIndex::A1, sbi_rt::pmu_num_counters()),
@@ -519,8 +503,6 @@ impl<H: AxVMHal> VCpu<H> {
         }
         Ok(())
     }
-
-    
 }
 
 // Private methods implements

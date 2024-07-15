@@ -3,10 +3,10 @@ use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use axerrno::{ax_err, AxResult};
 
+use crate::arch::AxArchDeviceList;
 use crate::config::AxVMConfig;
 use crate::AxVCpu;
 use crate::{has_hardware_support, AxVMHal, HostPhysAddr};
-use crate::arch::AxArchDeviceList;
 use core::cell::UnsafeCell;
 use core::fmt;
 
@@ -32,9 +32,9 @@ pub struct AxVM<H: AxVMHal> {
 impl<H: AxVMHal> fmt::Debug for AxVM<H> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AxVM")
-         .field("id", &self.inner_const.id)
-         .field("gpm", &self.inner_const.gpm)
-         .finish()
+            .field("id", &self.inner_const.id)
+            .field("gpm", &self.inner_const.gpm)
+            .finish()
     }
 }
 
@@ -57,7 +57,7 @@ impl<H: AxVMHal> AxVM<H> {
                 },
                 inner_mut: AxVMInnerMut {
                     _marker: core::marker::PhantomData,
-                }
+                },
             }
         });
 

@@ -80,7 +80,6 @@ impl<H: AxVMHal> AxVMPerCpu<H> {
     pub fn hardware_disable(&mut self) -> AxResult {
         self.arch_checked_mut().hardware_disable()
     }
-
 }
 
 impl<H: AxVMHal> Drop for AxVMPerCpu<H> {
