@@ -10,7 +10,7 @@ use riscv::register::{htinst, htval, hvip, scause, sstatus, stval};
 
 use super::csrs::{traps, RiscvCsrTrait, CSR};
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
-use crate::vcpu::AxArchVCpuExitReason;
+use axvcpu::AxArchVCpuExitReason;
 use crate::{AxVMHal, GuestPhysAddr, GuestVirtAddr, HostPhysAddr};
 
 use super::csrs::defs::hstatus;
@@ -224,8 +224,12 @@ pub struct VCpu<H: AxVMHal> {
     marker: PhantomData<H>,
 }
 
-impl<H: AxVMHal> VCpu<H> {
-    pub fn new(_config: VCpuConfig) -> AxResult<Self> {
+impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
+    type CreateConfig = ();
+
+    type SetupConfig = ();
+
+    fn new(_config: Self::CreateConfig) -> AxResult<Self> {
         let mut regs = VmCpuRegisters::default();
         // Set hstatus
         let mut hstatus = LocalRegisterCopy::<usize, hstatus::Register>::new(
@@ -251,13 +255,17 @@ impl<H: AxVMHal> VCpu<H> {
         })
     }
 
-    pub fn set_entry(&mut self, entry: GuestPhysAddr) -> AxResult {
+    fn setup(&mut self, _config: Self::SetupConfig) -> AxResult {
+        Ok(())
+    }
+
+    fn set_entry(&mut self, entry: GuestPhysAddr) -> AxResult {
         let regs = &mut self.regs;
         regs.guest_regs.sepc = entry;
         Ok(())
     }
 
-    pub fn set_ept_root(&mut self, ept_root: HostPhysAddr) -> AxResult {
+    fn set_ept_root(&mut self, ept_root: HostPhysAddr) -> AxResult {
         self.regs.virtual_hs_csrs.hgatp = 8usize << 60 | usize::from(ept_root) >> 12;
         unsafe {
             core::arch::asm!(
@@ -269,7 +277,7 @@ impl<H: AxVMHal> VCpu<H> {
         Ok(())
     }
 
-    pub fn run(&mut self) -> AxResult<AxArchVCpuExitReason> {
+    fn run(&mut self) -> AxResult<AxArchVCpuExitReason> {
         let regs = &mut self.regs;
         unsafe {
             // Safe to run the guest as it only touches memory assigned to it by being owned
@@ -279,12 +287,14 @@ impl<H: AxVMHal> VCpu<H> {
         self.vmexit_handler()
     }
 
-    pub fn bind(&mut self) -> AxResult {
-        unimplemented!()
+    fn bind(&mut self) -> AxResult {
+        // unimplemented!()
+        Ok(())
     }
 
-    pub fn unbind(&mut self) -> AxResult {
-        unimplemented!()
+    fn unbind(&mut self) -> AxResult {
+        // unimplemented!()
+        Ok(())
     }
 }
 
@@ -355,7 +365,7 @@ impl<H: AxVMHal> VCpu<H> {
                         _ => todo!(),
                     }
                     self.advance_pc(4);
-                    Ok(AxArchVCpuExitReason::ArchVCpuExitReason)
+                    Ok(AxArchVCpuExitReason::Nothing)
                 } else {
                     panic!()
                 }
@@ -368,7 +378,7 @@ impl<H: AxVMHal> VCpu<H> {
                 // Clear host timer interrupt
                 CSR.sie
                     .read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
-                Ok(AxArchVCpuExitReason::ArchVCpuExitReason)
+                Ok(AxArchVCpuExitReason::Nothing)
             }
             Trap::Interrupt(Interrupt::SupervisorExternal) => {
                 Ok(AxArchVCpuExitReason::ExternalInterruptEmulation)

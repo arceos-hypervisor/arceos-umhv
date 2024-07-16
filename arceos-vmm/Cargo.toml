@@ -20,7 +20,6 @@ axstd = { path = "../arceos/ulib/axstd", features = [
 ], optional = true }
 axalloc = { path = "../arceos/modules/axalloc" }
 axhal = { path = "../arceos/modules/axhal" }
-percpu = { path = "../arceos/crates/percpu" } 
 
 # System independent crates used for constructing hypervisor.
 axvm = { path = "../crates/axvm" }
@@ -29,6 +28,7 @@ axvm = { path = "../crates/axvm" }
 axerrno = { path = "../arceos/crates/axerrno" }
 page_table_entry = { path = "../arceos/crates/page_table_entry" }
 memory_addr = { path = "../arceos/crates/memory_addr" }
+percpu = { path = "../arceos/crates/percpu" } 
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"

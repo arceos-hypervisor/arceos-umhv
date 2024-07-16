@@ -3,7 +3,7 @@ use super::regs::GprIndex;
 use super::vcpu::VCpu;
 use super::vmexit::PrivilegeLevel;
 use super::{devices::plic::PlicState, traps, vcpu, vm_pages::fetch_guest_instruction, CSR};
-use crate::vcpu::AxArchVCpuExitReason;
+use axvcpu::AxArchVCpuExitReason;
 use crate::{AxVMHal, GuestPhysAddr, GuestVirtAddr};
 use axerrno::{AxError, AxResult};
 use core::panic;
