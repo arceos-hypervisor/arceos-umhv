@@ -16,8 +16,8 @@ cfg-if = "1.0"
 axstd = { path = "../arceos/ulib/axstd", features = [
     "alloc",
     "paging",
-    "fs",
-    "irq",
+    "fs"
+# riscv-remove  "irq",
 ], optional = true }
 axalloc = { path = "../arceos/modules/axalloc" }
 axhal = { path = "../arceos/modules/axhal" }
