@@ -20,10 +20,10 @@ axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26
 axvm = { path = "../crates/axvm" }
 
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
-axerrno = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c" }
-page_table_entry = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c" }
-memory_addr = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c" }
-percpu = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c" }
+axerrno = "0.1.0"
+memory_addr = "0.2.0"
+page_table_entry = "0.1.2"
+percpu = "0.1.2"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 ## todo: use features to disable "irq" in riscv

@@ -12,6 +12,7 @@ extern crate alloc;
 extern crate log;
 
 // mod device_emu;
+mod config;
 mod gpm;
 mod hal;
 // mod vmexit; temporarily removed
@@ -19,7 +20,7 @@ mod hal;
 use alloc::vec::Vec;
 
 use axerrno::{AxError, AxResult};
-use axvm::config::{AxArchVCpuConfig, AxVCpuConfig, AxVMConfig};
+use axvm::config::{AxArchVCpuConfig, AxVCpuConfig, AxVMConfig, AxVMCrateConfig};
 use axvm::{AxVM, AxVMPerCpu, GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 use page_table_entry::MappingFlags;
 
@@ -41,22 +42,14 @@ fn main() {
         .hardware_enable()
         .expect("Failed to enable virtualization");
 
+    let raw_vm_config = core::include_str!("../configs/nimbos.toml");
+    let vm_create_config =
+        AxVMCrateConfig::from_toml(raw_vm_config).expect("Failed to resolve VM config");
+
     let gpm = setup_gpm().expect("Failed to set guest physical memory set");
     debug!("{:#x?}", gpm);
 
-    let config = AxVMConfig {
-        cpu_count: 1,
-        cpu_config: AxVCpuConfig {
-            arch_config: AxArchVCpuConfig {
-                setup_config: (),
-                create_config: (),
-            },
-            ap_entry: GUEST_ENTRY,
-            bsp_entry: GUEST_ENTRY,
-        },
-        // gpm: gpm.nest_page_table_root(),
-        // gpm : 0.into(),
-    };
+    let config = AxVMConfig::from(vm_create_config);
 
     let vm = AxVM::<AxVMHalImpl>::new(config, 0, gpm.nest_page_table_root())
         .expect("Failed to create VM");

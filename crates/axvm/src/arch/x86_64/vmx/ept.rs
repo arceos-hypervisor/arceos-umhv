@@ -1,8 +1,8 @@
 use core::{convert::TryFrom, fmt};
 
 use bit_field::BitField;
-use page_table::{PageTable64, PagingMetaData};
 use page_table_entry::{GenericPTE, MappingFlags};
+use page_table_multiarch::{PageTable64, PagingMetaData};
 
 use crate::HostPhysAddr;
 
@@ -146,6 +146,10 @@ impl GenericPTE for EPTEntry {
     }
     fn clear(&mut self) {
         self.0 = 0
+    }
+
+    fn bits(self) -> usize {
+        self.0 as usize
     }
 }
 
