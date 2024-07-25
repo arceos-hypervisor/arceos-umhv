@@ -29,6 +29,6 @@ impl AxVMHal for AxVMHalImpl {
     // }
 
     fn current_time_nanos() -> u64 {
-        axhal::time::current_time_nanos()
+        axhal::time::monotonic_time_nanos()
     }
 }

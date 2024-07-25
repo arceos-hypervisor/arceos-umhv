@@ -20,7 +20,7 @@ mod hal;
 use alloc::vec::Vec;
 
 use axerrno::{AxError, AxResult};
-use axvm::config::{AxArchVCpuConfig, AxVCpuConfig, AxVMConfig, AxVMCrateConfig};
+use axvm::config::{AxVCpuConfig, AxVMConfig, AxVMCrateConfig};
 use axvm::{AxVM, AxVMPerCpu, GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 use page_table_entry::MappingFlags;
 

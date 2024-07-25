@@ -2,7 +2,7 @@ use alloc::collections::BTreeMap;
 use core::fmt::{Debug, Formatter, Result};
 
 use axerrno::{AxError, AxResult};
-use axhal::paging::{PageSize, PagingIfImpl};
+use axhal::paging::{PageSize, PagingHandlerImpl};
 use axvm::{AxNestedPageTable, GuestPhysAddr, HostPhysAddr};
 use memory_addr::{is_aligned_4k, VirtAddr, PAGE_SIZE_4K as PAGE_SIZE};
 use page_table_entry::MappingFlags;
@@ -11,7 +11,7 @@ mod arch;
 pub use arch::setup_gpm;
 pub use arch::GUEST_ENTRY;
 
-type NestedPageTable = AxNestedPageTable<PagingIfImpl>;
+type NestedPageTable = AxNestedPageTable<PagingHandlerImpl>;
 
 #[derive(Debug)]
 enum Mapper {

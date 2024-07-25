@@ -13,8 +13,8 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 cfg-if = "1.0"
 
 # System dependent modules provided by ArceOS.
-axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c" }
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c" }
+axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
 
 # System independent crates used for constructing hypervisor.
 axvm = { path = "../crates/axvm" }
@@ -23,11 +23,11 @@ axvm = { path = "../crates/axvm" }
 axerrno = "0.1.0"
 memory_addr = "0.2.0"
 page_table_entry = "0.1.2"
-percpu = "0.1.2"
+percpu = { git = "https://github.com/arceos-hypervisor/percpu-hv.git" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 ## todo: use features to disable "irq" in riscv
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c", features = [
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
     "alloc",
     "paging",
     "fs",
@@ -38,7 +38,7 @@ x86_64 = "0.14"
 raw-cpuid = "11.0"
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c", features = [
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
     "alloc",
     "paging",
     "fs",
@@ -47,7 +47,7 @@ fdt = { version = "0.1.5" }
 arrayvec = { version = "0.7.2", default-features = false }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "ccda26c", features = [
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
     "alloc",
     "paging",
     "fs",
