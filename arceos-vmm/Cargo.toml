@@ -23,6 +23,7 @@ axvm = { path = "../crates/axvm" }
 axerrno = "0.1.0"
 memory_addr = "0.2.0"
 page_table_entry = "0.1.2"
+# Todo: replace it when percpu-hv is published to crates.io
 percpu = { git = "https://github.com/arceos-hypervisor/percpu-hv.git" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
