@@ -68,7 +68,9 @@ fn main() {
 
     const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
-    for vcpu_for_task in vm.vcpu_list() {
+    for vcpu in vm.vcpu_list() {
+        info!("Spawning task for Vcpu[{}]", vcpu.id());
+
         let mut task = TaskInner::new(
             || {
                 let curr = axtask::current();
@@ -91,15 +93,18 @@ fn main() {
                     device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason);
                 }
             },
-            format!("Vcpu[{}]", vcpu_for_task.id()),
+            format!("Vcpu[{}]", vcpu.id()),
             KERNEL_STACK_SIZE,
         );
 
-        task.init_task_ext(TaskExt::new(vm.clone(), vcpu_for_task.clone()));
+        task.init_task_ext(TaskExt::new(vm.clone(), vcpu.clone()));
         axtask::spawn_task(task);
     }
 
     info!("Boot VM...");
-    vm.boot().unwrap();
-    panic!("VM boot failed")
+    axtask::WaitQueue::new().wait();
+    unreachable!()
+
+    // vm.boot().unwrap();
+    // panic!("VM boot failed")
 }

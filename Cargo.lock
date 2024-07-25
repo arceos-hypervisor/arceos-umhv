@@ -68,6 +68,7 @@ dependencies = [
  "axio",
  "axlog",
  "axruntime",
+ "axtask",
 ]
 
 [[package]]
@@ -154,6 +155,7 @@ dependencies = [
  "axhal",
  "axlog",
  "axruntime",
+ "axsync",
  "axtask",
 ]
 
