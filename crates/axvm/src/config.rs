@@ -107,7 +107,7 @@ impl From<AxVMCrateConfig> for AxVMConfig {
 impl AxVMConfig {
     /// Returns the number of CPUs in the VM configuration.
     pub fn cpu_num(&self) -> usize {
-        0 // Currently returns 0, possibly a placeholder.
+        1 // Currently returns 1, possibly a placeholder.
     }
 
     /// Returns the entry address in GPA for the Bootstrap Processor (BSP).

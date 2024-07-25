@@ -2,6 +2,8 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use axerrno::{ax_err, ax_err_type, AxResult};
+use axmm::AddrSpace;
+use memory_addr::VirtAddr;
 
 use crate::arch::AxArchDeviceList;
 use crate::arch::AxArchVCpuImpl;
@@ -10,6 +12,9 @@ use crate::{has_hardware_support, AxVMHal, HostPhysAddr};
 use axvcpu::AxArchVCpu;
 use axvcpu::AxVCpu;
 use core::cell::UnsafeCell;
+
+const VM_ASPACE_BASE: usize = 0x1000;
+const VM_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
 
 #[allow(type_alias_bounds)] // we know the bound is not enforced here, we keep it for clarity
 type VCpu<H: AxVMHal> = AxVCpu<AxArchVCpuImpl<H>>;
@@ -23,7 +28,7 @@ struct AxVMInnerConst<H: AxVMHal> {
 }
 
 struct AxVMInnerMut<H: AxVMHal> {
-    // memory: ...
+    address_space: AddrSpace,
     _marker: core::marker::PhantomData<H>,
 }
 
@@ -34,7 +39,6 @@ pub struct AxVM<H: AxVMHal> {
 }
 
 impl<H: AxVMHal> AxVM<H> {
-    // TODO: move guest memory mapping to AxVMConfig, and store GuestPhysMemorySet in AxVM
     pub fn new(config: AxVMConfig, id: usize, ept_root: HostPhysAddr) -> AxResult<Arc<Self>> {
         let result = Arc::new({
             let mut vcpu_list = Vec::with_capacity(config.cpu_num());
@@ -47,6 +51,9 @@ impl<H: AxVMHal> AxVM<H> {
                 )?);
             }
 
+            let address_space =
+                AddrSpace::new_empty(VirtAddr::from(VM_ASPACE_BASE), VM_ASPACE_SIZE)?;
+
             Self {
                 inner_const: AxVMInnerConst {
                     id,
@@ -55,6 +62,7 @@ impl<H: AxVMHal> AxVM<H> {
                     device_list: UnsafeCell::new(AxArchDeviceList::<H>::new()),
                 },
                 inner_mut: AxVMInnerMut {
+                    address_space,
                     _marker: core::marker::PhantomData,
                 },
             }

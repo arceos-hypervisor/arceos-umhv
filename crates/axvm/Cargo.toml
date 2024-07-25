@@ -16,16 +16,19 @@ numeric-enum-macro = "0.2"
 serde = { version = "1.0.204", default-features = false, features = ["derive"] }
 toml = { git = "https://github.com/arceos-hypervisor/toml.git", branch = "no_std" }
 
-axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", branch = "dep" }
+axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git" }
 
 # System independent crates provided by ArceOS.
-axerrno = "0.1.0" 
+axerrno = "0.1.0"
 # kspin = "0.1.0"
 memory_addr = "0.2.0"
 page_table_multiarch = "0.1.2"
 page_table_entry = "0.1.2"
+# Todo: replace it when percpu-hv is published to crates.io
 percpu = { git = "https://github.com/arceos-hypervisor/percpu-hv.git" }
 
+# axmm = { git = "https://github.com/arceos-org/arceos.git", rev = "48805c4" }
+axmm = { path = "../../../../arceos/modules/axmm" }
 # Operating system dependent modules provided by ArceOS, these modules could be imported by remote url.
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
@@ -48,3 +51,6 @@ aarch64-cpu = "9.3"
 smccc = "0.1.1"
 tock-registers = "0.8"
 spin = "0.9"
+
+# [patch.'https://github.com/arceos-org/arceos.git']
+# axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
