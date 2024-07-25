@@ -14,8 +14,10 @@ extern crate log;
 // mod device_emu;
 mod gpm;
 mod hal;
+mod task;
 // mod vmexit; temporarily removed
 
+use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 use axerrno::{AxError, AxResult};
@@ -24,8 +26,7 @@ use axvm::{AxVM, AxVMPerCpu, GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 use page_table_entry::MappingFlags;
 
 use self::gpm::{setup_gpm, GuestMemoryRegion, GuestPhysMemorySet, GUEST_ENTRY};
-use self::hal::AxVMHalImpl;
-use alloc::vec;
+pub use self::hal::AxVMHalImpl;
 
 #[percpu::def_percpu]
 pub static mut AXVM_PER_CPU: AxVMPerCpu<AxVMHalImpl> = AxVMPerCpu::new_uninit();
@@ -58,8 +59,46 @@ fn main() {
         // gpm : 0.into(),
     };
 
-    let vm = AxVM::<AxVMHalImpl>::new(config, 0, gpm.nest_page_table_root())
-        .expect("Failed to create VM");
+    let vm: std::sync::Arc<AxVM<AxVMHalImpl>> =
+        AxVM::<AxVMHalImpl>::new(config, 0, gpm.nest_page_table_root())
+            .expect("Failed to create VM");
+
+    use self::task::TaskExt;
+    use axtask::{AxTaskRef, TaskExtRef, TaskInner};
+
+    const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
+
+    for vcpu_for_task in vm.vcpu_list() {
+        let mut task = TaskInner::new(
+            || {
+                let curr = axtask::current();
+                let vcpu = unsafe { curr.task_ext().vcpu.clone() };
+                let vm = unsafe { curr.task_ext().vm.clone() };
+
+                vcpu.bind().unwrap_or_else(|err| {
+                    warn!("VCpu {} failed to bind, {:?}", vcpu.id(), err);
+                    axtask::exit(err.code());
+                });
+
+                loop {
+                    // todo: device access
+                    let exit_reason = vcpu.run().unwrap_or_else(|err| {
+                        warn!("VCpu {} failed to run, {:?}", vcpu.id(), err);
+                        axtask::exit(err.code());
+                    });
+
+                    let device_list = vm.get_device_list();
+                    device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason);
+                }
+            },
+            format!("Vcpu[{}]", vcpu_for_task.id()),
+            KERNEL_STACK_SIZE,
+        );
+
+        task.init_task_ext(TaskExt::new(vm.clone(), vcpu_for_task.clone()));
+        axtask::spawn_task(task);
+    }
+
     info!("Boot VM...");
     vm.boot().unwrap();
     panic!("VM boot failed")
