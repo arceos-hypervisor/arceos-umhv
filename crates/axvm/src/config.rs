@@ -21,8 +21,8 @@ use crate::{GuestPhysAddr, HostPhysAddr};
 #[derive(Clone, Copy, Debug, Default)]
 pub struct AxVCpuConfig {
     // pub arch_config: AxArchVCpuConfig,
-    pub bsp_entry: usize,
-    pub ap_entry: usize,
+    pub bsp_entry: GuestPhysAddr,
+    pub ap_entry: GuestPhysAddr,
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
@@ -101,6 +101,25 @@ impl From<AxVMCrateConfig> for AxVMConfig {
             },
             memory_regions: cfg.memory_regions,
         }
+    }
+}
+
+impl AxVMConfig {
+    /// Returns the number of CPUs in the VM configuration.
+    pub fn cpu_num(&self) -> usize {
+        0 // Currently returns 0, possibly a placeholder.
+    }
+
+    /// Returns the entry address in GPA for the Bootstrap Processor (BSP).
+    pub fn bsp_entry(&self) -> GuestPhysAddr {
+        // Retrieves BSP entry from the CPU configuration.
+        self.cpu_config.bsp_entry
+    }
+
+    /// Returns the entry address in GPA for the Application Processor (AP).
+    pub fn ap_entry(&self) -> GuestPhysAddr {
+        // Retrieves AP entry from the CPU configuration.
+        self.cpu_config.ap_entry
     }
 }
 

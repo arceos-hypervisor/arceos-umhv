@@ -7,6 +7,7 @@ use crate::arch::AxArchDeviceList;
 use crate::arch::AxArchVCpuImpl;
 use crate::config::AxVMConfig;
 use crate::{has_hardware_support, AxVMHal, HostPhysAddr};
+use axvcpu::AxArchVCpu;
 use axvcpu::AxVCpu;
 use core::cell::UnsafeCell;
 
@@ -34,15 +35,15 @@ pub struct AxVM<H: AxVMHal> {
 
 impl<H: AxVMHal> AxVM<H> {
     // TODO: move guest memory mapping to AxVMConfig, and store GuestPhysMemorySet in AxVM
-    pub fn new(config: AxVMConfig<H>, id: usize, ept_root: HostPhysAddr) -> AxResult<Arc<Self>> {
+    pub fn new(config: AxVMConfig, id: usize, ept_root: HostPhysAddr) -> AxResult<Arc<Self>> {
         let result = Arc::new({
-            let mut vcpu_list = Vec::with_capacity(config.cpu_count);
-            for id in 0..config.cpu_count {
+            let mut vcpu_list = Vec::with_capacity(config.cpu_num());
+            for id in 0..config.cpu_num() {
                 vcpu_list.push(VCpu::new(
                     id,
                     0,
                     0,
-                    config.cpu_config.arch_config.create_config,
+                    <AxArchVCpuImpl<H> as AxArchVCpu>::CreateConfig::default(),
                 )?);
             }
 
@@ -62,14 +63,14 @@ impl<H: AxVMHal> AxVM<H> {
         info!("VM created: id={}", result.id());
         for vcpu in result.vcpu_list() {
             let entry = if vcpu.id() == 0 {
-                config.cpu_config.bsp_entry
+                config.bsp_entry()
             } else {
-                config.cpu_config.ap_entry
+                config.ap_entry()
             };
             vcpu.setup(
                 entry,
                 result.ept_root(),
-                config.cpu_config.arch_config.setup_config,
+                <AxArchVCpuImpl<H> as AxArchVCpu>::SetupConfig::default(),
             )?;
         }
         info!("VM setup: id={}", result.id());
