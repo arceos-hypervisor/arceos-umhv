@@ -632,7 +632,7 @@ pub fn set_control(
 pub fn set_ept_pointer(pml4_paddr: HostPhysAddr) -> AxResult {
     use super::instructions::{invept, InvEptType};
     let eptp = super::structs::EPTPointer::from_table_phys(pml4_paddr).bits();
-    VmcsControl64::EPTP.write(eptp);
+    VmcsControl64::EPTP.write(eptp)?;
     unsafe { invept(InvEptType::SingleContext, eptp).map_err(as_axerr)? };
     Ok(())
 }

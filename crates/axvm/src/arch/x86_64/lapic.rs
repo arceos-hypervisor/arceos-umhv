@@ -30,6 +30,7 @@ pub struct ApicTimer<H: AxVMHal> {
     _phantom: PhantomData<H>,
 }
 
+#[allow(unused)]
 impl<H: AxVMHal> ApicTimer<H> {
     pub(crate) const fn new() -> Self {
         Self {

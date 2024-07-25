@@ -1,8 +1,8 @@
 use axerrno::{AxError, AxResult};
-use axvm::{GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 use axhal::mem::virt_to_phys;
+use axvm::{GuestPhysAddr, HostPhysAddr, HostVirtAddr};
 
-use crate::{GuestPhysMemorySet, GuestMemoryRegion, MappingFlags};
+use crate::{GuestMemoryRegion, GuestPhysMemorySet, MappingFlags};
 
 pub const GUEST_PHYS_MEMORY_BASE: GuestPhysAddr = 0;
 pub const BIOS_ENTRY: GuestPhysAddr = 0x8000;

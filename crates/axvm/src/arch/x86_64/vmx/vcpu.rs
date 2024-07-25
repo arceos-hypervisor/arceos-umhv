@@ -356,6 +356,7 @@ impl<H: AxVMHal> VmxVcpu<H> {
 }
 
 // Implementation of private methods
+#[allow(unused)]
 impl<H: AxVMHal> VmxVcpu<H> {
     fn setup_io_bitmap(&mut self) -> AxResult {
         // By default, I/O bitmap is set as `intercept_all`.
@@ -699,6 +700,7 @@ impl<H: AxVMHal> VmxVcpu<H> {
         .expect("Failed to write guest control register")
     }
 
+    #[allow(unused)]
     fn cr(&self, cr_idx: usize) -> usize {
         (|| -> AxResult<usize> {
             Ok(match cr_idx {
@@ -929,14 +931,14 @@ impl<H: AxVMHal> VmxVcpu<H> {
             EAX_FREQUENCY_INFO => {
                 /// Timer interrupt frequencyin Hz.
                 /// Todo: this should be the same as `axconfig::TIMER_FREQUENCY` defined in ArceOS's config file.
-                const TIMER_FREQUENCY_MHz: u32 = 3_000;
+                const TIMER_FREQUENCY_MHZ: u32 = 3_000;
                 let mut res = cpuid!(regs_clone.rax, regs_clone.rcx);
                 if res.eax == 0 {
                     warn!(
                         "handle_cpuid: Failed to get TSC frequency by CPUID, default to {} MHz",
-                        TIMER_FREQUENCY_MHz
+                        TIMER_FREQUENCY_MHZ
                     );
-                    res.eax = TIMER_FREQUENCY_MHz;
+                    res.eax = TIMER_FREQUENCY_MHZ;
                 }
                 res
             }
@@ -1073,7 +1075,7 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VmxVcpu<H> {
 
     type SetupConfig = ();
 
-    fn new(config: Self::CreateConfig) -> AxResult<Self> {
+    fn new(_config: Self::CreateConfig) -> AxResult<Self> {
         Self::new()
     }
 
@@ -1092,6 +1094,7 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VmxVcpu<H> {
     }
 
     fn run(&mut self) -> AxResult<axvcpu::AxArchVCpuExitReason> {
+        #[allow(unreachable_code)]
         match self.run() {
             Some(reason) => Ok(match reason {
                 _ => unimplemented!(),

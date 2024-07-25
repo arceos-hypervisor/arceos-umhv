@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use axerrno::{ax_err, ax_err_type, AxResult};
+use axerrno::{ax_err, AxResult};
 
 use crate::arch::AxArchDeviceList;
 use crate::arch::AxArchVCpuImpl;
@@ -11,12 +11,12 @@ use axvcpu::AxVCpu;
 use core::cell::UnsafeCell;
 
 #[allow(type_alias_bounds)] // we know the bound is not enforced here, we keep it for clarity
-type VCpu<H: AxVMHal> = AxVCpu<AxArchVCpuImpl<H>>;
+pub type VCpu<H: AxVMHal> = AxVCpu<AxArchVCpuImpl<H>>;
 
 struct AxVMInnerConst<H: AxVMHal> {
     id: usize,
     ept_root: HostPhysAddr,
-    vcpu_list: Box<[VCpu<H>]>,
+    vcpu_list: Box<[Arc<VCpu<H>>]>,
     // to be added: device_list: ...
     device_list: UnsafeCell<AxArchDeviceList<H>>,
 }
@@ -29,6 +29,7 @@ struct AxVMInnerMut<H: AxVMHal> {
 /// A Virtual Machine.
 pub struct AxVM<H: AxVMHal> {
     inner_const: AxVMInnerConst<H>,
+    #[allow(unused)] // Todo: replace this.
     inner_mut: AxVMInnerMut<H>,
 }
 
@@ -38,12 +39,12 @@ impl<H: AxVMHal> AxVM<H> {
         let result = Arc::new({
             let mut vcpu_list = Vec::with_capacity(config.cpu_count);
             for id in 0..config.cpu_count {
-                vcpu_list.push(VCpu::new(
+                vcpu_list.push(Arc::new(VCpu::new(
                     id,
                     0,
                     0,
                     config.cpu_config.arch_config.create_config,
-                )?);
+                )?));
             }
 
             Self {
@@ -83,12 +84,12 @@ impl<H: AxVMHal> AxVM<H> {
     }
 
     #[inline]
-    pub fn vcpu(&self, vcpu_id: usize) -> Option<&VCpu<H>> {
-        self.vcpu_list().get(vcpu_id)
+    pub fn vcpu(&self, vcpu_id: usize) -> Option<Arc<VCpu<H>>> {
+        self.vcpu_list().get(vcpu_id).cloned()
     }
 
     #[inline]
-    pub fn vcpu_list(&self) -> &[VCpu<H>] {
+    pub fn vcpu_list(&self) -> &[Arc<VCpu<H>>] {
         &self.inner_const.vcpu_list
     }
 
@@ -100,25 +101,12 @@ impl<H: AxVMHal> AxVM<H> {
         if !has_hardware_support() {
             ax_err!(Unsupported, "Hardware does not support virtualization")
         } else {
-            self.run_vcpu(0)
+            unimplemented!()
+            // Todo: make all tasks related to vcpus from Blocked to RUNNING.
         }
     }
 
     pub fn get_device_list(&self) -> &mut AxArchDeviceList<H> {
         unsafe { &mut *self.inner_const.device_list.get() }
-    }
-
-    pub fn run_vcpu(&self, vcpu_id: usize) -> AxResult {
-        let vcpu = self
-            .vcpu(vcpu_id)
-            .ok_or_else(|| ax_err_type!(InvalidInput, "Invalid vcpu_id"))?;
-        vcpu.bind()?;
-        loop {
-            // todo: device access
-            let exit_reason = vcpu.run()?;
-            let device_list = self.get_device_list();
-            device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason);
-        }
-        vcpu.unbind()
     }
 }

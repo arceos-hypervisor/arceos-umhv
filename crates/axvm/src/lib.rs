@@ -29,6 +29,7 @@ pub use hal::AxVMHal;
 pub use mm::{AxNestedPageTable, NestedPageFaultInfo};
 pub use mm::{GuestPhysAddr, GuestVirtAddr, HostPhysAddr, HostVirtAddr};
 pub use vm::AxVM;
+pub use vm::VCpu;
 
 pub type AxVMPerCpu<H> = percpu::AxVMPerCpu<arch::AxVMArchPerCpuImpl<H>>;
 
