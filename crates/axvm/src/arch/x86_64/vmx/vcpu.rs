@@ -721,12 +721,12 @@ macro_rules! vmx_entry_with {
     ($instr:literal) => {
         asm!(
             save_regs_to_stack!(),                  // save host status
-            "mov    [rdi + {host_stack_top}], rsp", // save current RSP to Vcpu::host_stack_top
+            "mov    [rdi + {host_stack_size}], rsp", // save current RSP to Vcpu::host_stack_top
             "mov    rsp, rdi",                      // set RSP to guest regs area
             restore_regs_from_stack!(),             // restore guest status
             $instr,                                 // let's go!
             "jmp    {failed}",
-            host_stack_top = const size_of::<GeneralRegisters>(),
+            host_stack_size = const size_of::<GeneralRegisters>(),
             failed = sym Self::vmx_entry_failed,
             options(noreturn),
         )

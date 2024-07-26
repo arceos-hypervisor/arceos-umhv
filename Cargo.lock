@@ -119,6 +119,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
+name = "axaddrspace"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axconfig 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_rebase)",
+ "axerrno",
+ "axhal",
+ "bit_field",
+ "bitflags 2.6.0",
+ "cfg-if",
+ "lazyinit",
+ "log",
+ "memory_addr",
+ "memory_set 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "numeric-enum-macro",
+ "page_table_entry",
+ "page_table_multiarch",
+]
+
+[[package]]
 name = "axalloc"
 version = "0.1.0"
 source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_rebase#d6aefc42cf9b2c9017d03050bfe1931926d37366"
@@ -338,7 +358,7 @@ dependencies = [
  "lazyinit",
  "log",
  "memory_addr",
- "memory_set",
+ "memory_set 0.1.0",
 ]
 
 [[package]]
@@ -731,6 +751,15 @@ checksum = "bea53f55564acdbe43e404118414b5fb45dfe9bea0dfc9bd80b8e5bb02aeb047"
 [[package]]
 name = "memory_set"
 version = "0.1.0"
+dependencies = [
+ "memory_addr",
+]
+
+[[package]]
+name = "memory_set"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e46119df8fd48e57474c6db295a4b3068ed9fcbfd9c5467745880eb97cfc7808"
 dependencies = [
  "memory_addr",
 ]

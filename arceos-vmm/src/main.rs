@@ -52,12 +52,13 @@ fn main() {
     let vm_create_config =
         AxVMCrateConfig::from_toml(raw_vm_config).expect("Failed to resolve VM config");
 
+    // FIXME: to be removed, guest physical memory set should be refactored, generated from vm config and managed by VM structure.
     let gpm = setup_gpm().expect("Failed to set guest physical memory set");
     debug!("{:#x?}", gpm);
 
     let config = AxVMConfig::from(vm_create_config);
 
-    let vm = AxVM::<AxVMHalImpl>::new(config, 0, gpm.nest_page_table_root())
+    let vm = AxVM::<AxVMHalImpl>::new(config)
         .expect("Failed to create VM");
     info!("Boot VM...");
 

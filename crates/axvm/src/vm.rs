@@ -39,7 +39,7 @@ pub struct AxVM<H: AxVMHal> {
 }
 
 impl<H: AxVMHal> AxVM<H> {
-    pub fn new(config: AxVMConfig, id: usize, ept_root: HostPhysAddr) -> AxResult<Arc<Self>> {
+    pub fn new(config: AxVMConfig) -> AxResult<Arc<Self>> {
         let result = Arc::new({
             let mut vcpu_list = Vec::with_capacity(config.cpu_num());
             for id in 0..config.cpu_num() {
