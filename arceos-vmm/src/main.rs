@@ -12,28 +12,22 @@ extern crate alloc;
 extern crate log;
 
 // mod device_emu;
-mod config;
-mod gpm;
+// mod gpm;
 mod hal;
+mod images;
 // mod vmexit; temporarily removed
 
-use alloc::vec::Vec;
+use axvm::config::{AxVMConfig, AxVMCrateConfig};
+use axvm::{AxVM, AxVMPerCpu};
 
-use axerrno::{AxError, AxResult};
-use axvm::config::{AxVCpuConfig, AxVMConfig, AxVMCrateConfig};
-use axvm::{AxVM, AxVMPerCpu, GuestPhysAddr, HostPhysAddr, HostVirtAddr};
-use page_table_entry::MappingFlags;
-
-use self::gpm::{setup_gpm, GuestMemoryRegion, GuestPhysMemorySet, GUEST_ENTRY};
-use self::hal::AxVMHalImpl;
-use alloc::vec;
+use crate::hal::AxVMHalImpl;
 
 #[percpu::def_percpu]
 pub static mut AXVM_PER_CPU: AxVMPerCpu<AxVMHalImpl> = AxVMPerCpu::new_uninit();
 
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
-    println!("Starting virtualization...");
+    info!("Starting virtualization...");
 
     // TODO: remove this to somewhere else like `percpu.hardware_enable()`.
     info!("Hardware support: {:?}", axvm::has_hardware_support());
@@ -52,17 +46,20 @@ fn main() {
     let vm_create_config =
         AxVMCrateConfig::from_toml(raw_vm_config).expect("Failed to resolve VM config");
 
-    let gpm = setup_gpm().expect("Failed to set guest physical memory set");
-    debug!("{:#x?}", gpm);
+    let config = AxVMConfig::from(vm_create_config.clone());
 
-    let config = AxVMConfig::from(vm_create_config);
+    // Create VM.
+    let vm = AxVM::<AxVMHalImpl>::new(config).expect("Failed to create VM");
 
-    let vm = AxVM::<AxVMHalImpl>::new(config, 0, gpm.nest_page_table_root())
-        .expect("Failed to create VM");
-    info!("Boot VM...");
+    // Load corresponding images for VM.
+    info!("VM[{}] created success, loading images...", vm.id());
+    images::load_vm_images(vm_create_config, vm.clone()).expect("Failed to load VM images");
 
-    // Todo: remove this, details can be get from 
-    // this [PR](https://github.com/arceos-hypervisor/arceos-umhv/pull/5). 
+    info!("Boot VM[{}]...", vm.id());
+
+    // Todo: remove this, details can be get from
+    // this [PR](https://github.com/arceos-hypervisor/arceos-umhv/pull/5).
     vm.boot().unwrap();
-    panic!("VM boot failed")
+
+    panic!("VM[{}] boot failed", vm.id());
 }

@@ -14,7 +14,13 @@ cfg-if = "1.0"
 
 # System dependent modules provided by ArceOS.
 axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = ["paging"] }
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
+    "alloc",
+    "paging",
+    "fs",
+    "irq",
+], optional = true }
 
 # System independent crates used for constructing hypervisor.
 axvm = { path = "../crates/axvm" }
@@ -22,38 +28,19 @@ axvm = { path = "../crates/axvm" }
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
 axerrno = "0.1.0"
 memory_addr = "0.2.0"
-page_table_entry = "0.1.2"
-# Todo: replace it when percpu-hv is published to crates.io
-percpu = { git = "https://github.com/arceos-hypervisor/percpu-hv.git" }
+page_table_entry = "0.3"
+percpu = "0.1.3"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 ## todo: use features to disable "irq" in riscv
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
-    "alloc",
-    "paging",
-    "fs",
-    "irq",
-], optional = true }
 x86 = "0.52"
 x86_64 = "0.14"
 raw-cpuid = "11.0"
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
-    "alloc",
-    "paging",
-    "fs",
-], optional = true }
 fdt = { version = "0.1.5" }
 arrayvec = { version = "0.7.2", default-features = false }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
-    "alloc",
-    "paging",
-    "fs",
-    "irq",
-    "hv",
-], optional = true }
 fdt = { version = "0.1.5" }
 arrayvec = { version = "0.7.2", default-features = false }
