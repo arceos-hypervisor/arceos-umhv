@@ -4,7 +4,7 @@ use bit_field::BitField;
 use page_table_entry::{GenericPTE, MappingFlags};
 use page_table_multiarch::{PageTable64, PagingMetaData};
 
-use crate::HostPhysAddr;
+use axaddrspace::HostPhysAddr;
 
 bitflags::bitflags! {
     /// EPT entry flags. (SDM Vol. 3C, Section 28.3.2)
@@ -171,6 +171,8 @@ impl const PagingMetaData for ExtendedPageTableMetadata {
     const LEVELS: usize = 4;
     const PA_MAX_BITS: usize = 52;
     const VA_MAX_BITS: usize = 48;
+
+    fn flush_tlb(_vaddr: Option<axvcpu::HostVirtAddr>) {}
 }
 
 /// The VMX extended page table. (SDM Vol. 3C, Section 29.3)

@@ -1,19 +1,23 @@
 use alloc::boxed::Box;
+use alloc::format;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use axerrno::{ax_err, ax_err_type, AxResult};
-use axmm::AddrSpace;
-use memory_addr::VirtAddr;
-
-use crate::arch::AxArchDeviceList;
-use crate::arch::AxArchVCpuImpl;
-use crate::config::AxVMConfig;
-use crate::{has_hardware_support, AxVMHal, HostPhysAddr};
-use axvcpu::AxArchVCpu;
-use axvcpu::AxVCpu;
 use core::cell::UnsafeCell;
 
-const VM_ASPACE_BASE: usize = 0x1000;
+use axerrno::{ax_err, ax_err_type, AxResult};
+use memory_addr::VirtAddr;
+use page_table_multiarch::PagingHandler;
+use spin::Mutex;
+
+use axvcpu::{AxArchVCpu, AxVCpu};
+
+use axaddrspace::{AddrSpace, GuestPhysAddr, HostPhysAddr, HostVirtAddr, MappingFlags};
+
+use crate::arch::{AxArchDeviceList, AxArchVCpuImpl};
+use crate::config::AxVMConfig;
+use crate::{has_hardware_support, AxVMHal};
+
+const VM_ASPACE_BASE: usize = 0x0;
 const VM_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
 
 #[allow(type_alias_bounds)] // we know the bound is not enforced here, we keep it for clarity
@@ -21,14 +25,15 @@ type VCpu<H: AxVMHal> = AxVCpu<AxArchVCpuImpl<H>>;
 
 struct AxVMInnerConst<H: AxVMHal> {
     id: usize,
-    ept_root: HostPhysAddr,
+    config: AxVMConfig,
     vcpu_list: Box<[VCpu<H>]>,
     // to be added: device_list: ...
     device_list: UnsafeCell<AxArchDeviceList<H>>,
 }
 
 struct AxVMInnerMut<H: AxVMHal> {
-    address_space: AddrSpace,
+    // Todo: use more efficient lock.
+    address_space: Mutex<AddrSpace<H::PagingHandler>>,
     _marker: core::marker::PhantomData<H>,
 }
 
@@ -41,42 +46,85 @@ pub struct AxVM<H: AxVMHal> {
 impl<H: AxVMHal> AxVM<H> {
     pub fn new(config: AxVMConfig) -> AxResult<Arc<Self>> {
         let result = Arc::new({
-            let mut vcpu_list = Vec::with_capacity(config.cpu_num());
-            for id in 0..config.cpu_num() {
+            let vcpu_pcpu_id_pairs = config.get_vcpu_pcpu_id_pairs();
+
+            // Create VCpus.
+            let mut vcpu_list = Vec::with_capacity(vcpu_pcpu_id_pairs.len());
+
+            for (vcpu_id, pcpu_id) in vcpu_pcpu_id_pairs {
+                // Todo: distinguish between `favor_phys_cpu` and `affinity`.
                 vcpu_list.push(VCpu::new(
-                    id,
-                    0,
-                    0,
+                    vcpu_id,
+                    pcpu_id,
+                    pcpu_id,
                     <AxArchVCpuImpl<H> as AxArchVCpu>::CreateConfig::default(),
                 )?);
             }
 
-            let address_space =
+            // Set up Memory regions.
+            let mut address_space =
                 AddrSpace::new_empty(VirtAddr::from(VM_ASPACE_BASE), VM_ASPACE_SIZE)?;
+            for mem_region in config.memory_regions() {
+                let mapping_flags = MappingFlags::from_bits(mem_region.flags).ok_or_else(|| {
+                    ax_err_type!(
+                        InvalidInput,
+                        format!("Illegal flags {:?}", mem_region.flags)
+                    )
+                })?;
+
+                // Handle passthrough device's memory region.
+                // Todo: Perhaps we can merge the management of passthrough device memory
+                //       into the device configuration file.
+                if mapping_flags.contains(MappingFlags::DEVICE) {
+                    address_space.map_linear(
+                        GuestPhysAddr::from(mem_region.gpa),
+                        HostPhysAddr::from(mem_region.gpa),
+                        mem_region.size,
+                        mapping_flags,
+                    )?;
+                } else {
+                    // Handle ram region.
+                    // Note: currently we use `map_alloc`,
+                    // which allocates real physical memory in units of physical page frames,
+                    // which may not be contiguous!!!
+                    address_space.map_alloc(
+                        GuestPhysAddr::from(mem_region.gpa),
+                        mem_region.size,
+                        mapping_flags,
+                        true,
+                    )?;
+                }
+            }
+
+            // Setup Devices.
+            // Todo:
+            let device_list = AxArchDeviceList::<H>::new();
 
             Self {
                 inner_const: AxVMInnerConst {
-                    id,
-                    ept_root,
+                    id: config.id(),
+                    config,
                     vcpu_list: vcpu_list.into_boxed_slice(),
-                    device_list: UnsafeCell::new(AxArchDeviceList::<H>::new()),
+                    device_list: UnsafeCell::new(device_list),
                 },
                 inner_mut: AxVMInnerMut {
-                    address_space,
+                    address_space: Mutex::new(address_space),
                     _marker: core::marker::PhantomData,
                 },
             }
         });
 
         info!("VM created: id={}", result.id());
+
+        // Setup VCpus.
         for vcpu in result.vcpu_list() {
             let entry = if vcpu.id() == 0 {
-                config.bsp_entry()
+                result.inner_const.config.bsp_entry()
             } else {
-                config.ap_entry()
+                result.inner_const.config.ap_entry()
             };
             vcpu.setup(
-                entry,
+                entry.as_usize(),
                 result.ept_root(),
                 <AxArchVCpuImpl<H> as AxArchVCpu>::SetupConfig::default(),
             )?;
@@ -86,29 +134,105 @@ impl<H: AxVMHal> AxVM<H> {
         Ok(result)
     }
 
+    /// Returns the VM id.
     #[inline]
     pub fn id(&self) -> usize {
         self.inner_const.id
     }
 
+    /// Retrieves the vCPU corresponding to the given vcpu_id for the VM.
+    /// Returns None if the vCPU does not exist.
     #[inline]
     pub fn vcpu(&self, vcpu_id: usize) -> Option<&VCpu<H>> {
         self.vcpu_list().get(vcpu_id)
     }
 
+    /// Returns a reference to the list of vCPUs corresponding to the VM.
     #[inline]
     pub fn vcpu_list(&self) -> &[VCpu<H>] {
         &self.inner_const.vcpu_list
     }
 
+    /// Returns the base address of the two-stage address translation page table for the VM.
     pub fn ept_root(&self) -> HostPhysAddr {
-        self.inner_const.ept_root
+        self.inner_mut.address_space.lock().page_table_root()
+    }
+
+    /// Returns the virtual addresses in `HostVirtAddr`
+    /// of where the VM images is loaded, in the following order:
+    /// (
+    ///     kernel image load address,
+    ///     BIOS image load address (optional, return None if no BIOS image is needed),
+    ///     device tree image load address (optional, return None if no DTB image is needed),
+    ///     ramdisk image load address (optional, return None if no ramdisk image is needed),
+    /// )
+    ///
+    /// FIXME: Find a more elegant way to manage potentially non-contiguous physical memory
+    ///         instead of `Vec<&'static mut [u8]>`.
+    pub fn get_images_load_addrs(
+        &self,
+    ) -> AxResult<(
+        Vec<&'static mut [u8]>,
+        Option<HostVirtAddr>,
+        Option<HostVirtAddr>,
+        Option<HostVirtAddr>,
+    )> {
+        let image_config = self.inner_const.config.image_config();
+        let addr_space = self.inner_mut.address_space.lock();
+
+        // FIXME: do we need to know the actual size of the image file,
+        //        and when is it appropriate to obtain it?
+        let kernel_load_hva = addr_space
+            .translated_byte_buffer(image_config.kernel_load_gpa, 0x100000)
+            .expect("Failed to translate kernel image load address");
+
+        // FIXME: There might be a bug here if the physical memory is non-contiguous.
+        let bios_load_hva = image_config.bios_load_gpa.map(|bios_load_gpa| {
+            H::PagingHandler::phys_to_virt(
+                addr_space
+                    .translate(bios_load_gpa)
+                    .expect("Failed to translate BIOS load address"),
+            )
+        });
+
+        // FIXME: There might be a bug here if the physical memory is non-contiguous.
+        let dtb_load_hva = image_config.dtb_load_gpa.map(|dtb_load_gpa| {
+            H::PagingHandler::phys_to_virt(
+                addr_space
+                    .translate(dtb_load_gpa)
+                    .expect("Failed to translate BIOS load address"),
+            )
+        });
+
+        // FIXME: There might be a bug here if the physical memory is non-contiguous.
+        let ramdisk_load_hva = image_config.ramdisk_load_gpa.map(|ramdisk_load_gpa| {
+            H::PagingHandler::phys_to_virt(
+                addr_space
+                    .translate(ramdisk_load_gpa)
+                    .expect("Failed to translate BIOS load address"),
+            )
+        });
+
+        Ok((
+            kernel_load_hva,
+            bios_load_hva,
+            dtb_load_hva,
+            ramdisk_load_hva,
+        ))
     }
 
     pub fn boot(&self) -> AxResult {
         if !has_hardware_support() {
             ax_err!(Unsupported, "Hardware does not support virtualization")
         } else {
+            // for check;
+            let addr = GuestPhysAddr::from(0x200000);
+            debug!("check addr {:#x}", addr);
+
+            let paddr = self.inner_mut.address_space.lock().translate(addr);
+
+            debug!("{:?} mapped to {:#x?}", addr, paddr);
+
             self.run_vcpu(0)
         }
     }
@@ -125,9 +249,28 @@ impl<H: AxVMHal> AxVM<H> {
         loop {
             // todo: device access
             let exit_reason = vcpu.run()?;
-            let device_list = self.get_device_list();
-            device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason);
+
+            match exit_reason {
+                axvcpu::AxArchVCpuExitReason::MmioRead { addr, width: _ } => {
+                    debug!("EPT from addr {:#x}", addr);
+
+                    let paddr = self
+                        .inner_mut
+                        .address_space
+                        .lock()
+                        .translate(VirtAddr::from(addr));
+
+                    debug!("EPT mapped to {:#x?}", paddr);
+
+                    break;
+                }
+                _ => {
+                    let device_list = self.get_device_list();
+                    device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason)?;
+                }
+            }
         }
-        vcpu.unbind()
+        vcpu.unbind()?;
+        panic!("VCpu [{}] halt", vcpu.id())
     }
 }

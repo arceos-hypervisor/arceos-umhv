@@ -3,11 +3,14 @@
 //! 	* module: https://github.com/arceos-org/arceos/tree/monolithickernel-new/modules/axmm
 //! 	* crate: https://github.com/arceos-org/arceos/tree/monolithickernel-new/crates/memory_set
 
+use core::marker::PhantomData;
 
 use axerrno::{ax_err_type, AxResult};
-use core::marker::PhantomData;
-use memory_addr::{PhysAddr, VirtAddr};
+use memory_addr::PhysAddr;
 use page_table_entry::MappingFlags;
+use page_table_multiarch::PagingHandler;
+
+use axaddrspace::{GuestPhysAddr, HostPhysAddr};
 
 use crate::AxVMHal;
 
@@ -15,15 +18,6 @@ mod npt;
 
 pub(crate) use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
 pub use npt::AxNestedPageTable;
-
-/// Guest virtual address.
-pub type GuestVirtAddr = usize;
-/// Guest physical address.
-pub type GuestPhysAddr = usize;
-/// Host virtual address.
-pub type HostVirtAddr = VirtAddr;
-/// Host physical address.
-pub type HostPhysAddr = PhysAddr;
 
 /// Information about nested page faults.
 #[derive(Debug)]
@@ -44,7 +38,7 @@ pub struct PhysFrame<H: AxVMHal> {
 
 impl<H: AxVMHal> PhysFrame<H> {
     pub fn alloc() -> AxResult<Self> {
-        let start_paddr = H::alloc_page()
+        let start_paddr = H::PagingHandler::alloc_frame()
             .ok_or_else(|| ax_err_type!(NoMemory, "allocate physical frame failed"))?;
         assert_ne!(start_paddr.as_usize(), 0);
         debug!("[AxVM] allocated PhysFrame({:#x})", start_paddr);
@@ -72,7 +66,7 @@ impl<H: AxVMHal> PhysFrame<H> {
     }
 
     pub fn as_mut_ptr(&self) -> *mut u8 {
-        H::phys_to_virt(self.start_paddr).as_mut_ptr()
+        H::PagingHandler::phys_to_virt(self.start_paddr).as_mut_ptr()
     }
 
     pub fn fill(&mut self, byte: u8) {
@@ -83,7 +77,7 @@ impl<H: AxVMHal> PhysFrame<H> {
 impl<H: AxVMHal> Drop for PhysFrame<H> {
     fn drop(&mut self) {
         if self.start_paddr.as_usize() > 0 {
-            H::dealloc_page(self.start_paddr);
+            H::PagingHandler::dealloc_frame(self.start_paddr);
             debug!("[AxVM] deallocated PhysFrame({:#x})", self.start_paddr);
         }
     }
