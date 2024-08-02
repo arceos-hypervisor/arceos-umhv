@@ -26,6 +26,7 @@ pub fn load_vm_images(config: AxVMCrateConfig, vm: Arc<AxVM<AxVMHalImpl>>) -> Ax
         )?;
     };
     // Load DTB image if needed.
+    // Todo: generate DTB file for guest VM.
     if let Some(dtb_path) = dtb_path {
         load_image_from_file_system(
             dtb_path.as_str(),

@@ -167,8 +167,10 @@ impl<H: AxVMHal> AxVM<H> {
     ///     ramdisk image load address (optional, return None if no ramdisk image is needed),
     /// )
     ///
-    /// FIXME: Find a more elegant way to manage potentially non-contiguous physical memory
+    /// FIXME: 
+    /// 1. Find a more elegant way to manage potentially non-contiguous physical memory
     ///         instead of `Vec<&'static mut [u8]>`.
+    /// 2. Return Error for address translated error instead of panic.
     pub fn get_images_load_addrs(
         &self,
     ) -> AxResult<(
@@ -225,14 +227,6 @@ impl<H: AxVMHal> AxVM<H> {
         if !has_hardware_support() {
             ax_err!(Unsupported, "Hardware does not support virtualization")
         } else {
-            // for check;
-            let addr = GuestPhysAddr::from(0x200000);
-            debug!("check addr {:#x}", addr);
-
-            let paddr = self.inner_mut.address_space.lock().translate(addr);
-
-            debug!("{:?} mapped to {:#x?}", addr, paddr);
-
             self.run_vcpu(0)
         }
     }

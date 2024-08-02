@@ -13,14 +13,24 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 cfg-if = "1.0"
 
 # System dependent modules provided by ArceOS.
-axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = ["paging"] }
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase", features = [
+axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "7865ab7" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "7865ab7", features = ["paging"] }
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "7865ab7", features = [
     "alloc",
     "paging",
     "fs",
-    "irq",
+    # "irq",
+    "hv",
 ], optional = true }
+# axalloc = { path = "../../arceos/modules/axalloc" }
+# axhal = { path = "../../arceos/modules/axhal", features = ["paging", "hv"] }
+# axstd = { path = "../../arceos/ulib/axstd", features = [
+#     "alloc",
+#     "paging",
+#     "fs",
+#     # "irq",
+#     "hv",
+# ], optional = true }
 
 # System independent crates used for constructing hypervisor.
 axvm = { path = "../crates/axvm" }
@@ -28,8 +38,8 @@ axvm = { path = "../crates/axvm" }
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
 axerrno = "0.1.0"
 memory_addr = "0.2.0"
-page_table_entry = "0.3"
-percpu = "0.1.3"
+page_table_entry = { version = "0.3.3", features = ["arm-el2"] }
+percpu = { version = "0.1.4", features = ["arm-el2"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 ## todo: use features to disable "irq" in riscv

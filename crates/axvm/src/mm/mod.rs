@@ -14,10 +14,7 @@ use axaddrspace::{GuestPhysAddr, HostPhysAddr};
 
 use crate::AxVMHal;
 
-mod npt;
-
 pub(crate) use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
-pub use npt::AxNestedPageTable;
 
 /// Information about nested page faults.
 #[derive(Debug)]

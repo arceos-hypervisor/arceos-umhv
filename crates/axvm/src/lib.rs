@@ -26,7 +26,7 @@ pub mod arch;
 pub mod config;
 
 pub use hal::AxVMHal;
-pub use mm::{AxNestedPageTable, NestedPageFaultInfo};
+pub use mm::NestedPageFaultInfo;
 // pub use mm::{GuestPhysAddr, GuestVirtAddr, HostPhysAddr, HostVirtAddr};
 pub use vm::AxVM;
 
