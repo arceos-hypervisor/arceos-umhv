@@ -11,11 +11,8 @@ extern crate alloc;
 #[macro_use]
 extern crate log;
 
-// mod device_emu;
-// mod gpm;
 mod hal;
 mod images;
-// mod vmexit; temporarily removed
 
 use axvm::config::{AxVMConfig, AxVMCrateConfig};
 use axvm::{AxVM, AxVMPerCpu};
