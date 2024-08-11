@@ -13,24 +13,15 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 cfg-if = "1.0"
 
 # System dependent modules provided by ArceOS.
-axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "7865ab7" }
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "7865ab7", features = ["paging"] }
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "7865ab7", features = [
+axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f", features = ["paging"] }
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f", features = [
     "alloc",
     "paging",
     "fs",
     # "irq",
     "hv",
 ], optional = true }
-# axalloc = { path = "../../arceos/modules/axalloc" }
-# axhal = { path = "../../arceos/modules/axhal", features = ["paging", "hv"] }
-# axstd = { path = "../../arceos/ulib/axstd", features = [
-#     "alloc",
-#     "paging",
-#     "fs",
-#     # "irq",
-#     "hv",
-# ], optional = true }
 
 # System independent crates used for constructing hypervisor.
 axvm = { path = "../crates/axvm" }
