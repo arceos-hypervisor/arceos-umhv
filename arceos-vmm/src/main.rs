@@ -1,18 +1,15 @@
-#![cfg_attr(feature = "axstd", no_std)]
-#![cfg_attr(feature = "axstd", no_main)]
-#![feature(naked_functions)]
-#![allow(warnings)]
-#[macro_use]
-#[cfg(feature = "axstd")]
-extern crate axstd as std;
-
-extern crate alloc;
+#![no_std]
+#![no_main]
 
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate alloc;
+extern crate axstd as std;
 
 mod hal;
-mod images;
+mod task;
+mod vmm;
 
 use axvm::config::{AxVMConfig, AxVMCrateConfig};
 use axvm::{AxVM, AxVMPerCpu};
@@ -53,16 +50,18 @@ fn main() {
 
     // Create VM.
     let vm = AxVM::<AxVMHalImpl>::new(config).expect("Failed to create VM");
+    vmm::push_vm(vm.clone());
 
     // Load corresponding images for VM.
     info!("VM[{}] created success, loading images...", vm.id());
-    images::load_vm_images(vm_create_config, vm.clone()).expect("Failed to load VM images");
+    vmm::load_vm_images(vm_create_config, vm.clone()).expect("Failed to load VM images");
+
+    // Setup vcpus, spawn axtask for VCpu.
+    info!("VM[{}] images load success, setting up vcpus...", vm.id());
+    vmm::setup_vm_vcpus(vm.clone());
 
     info!("Boot VM[{}]...", vm.id());
+    axtask::WaitQueue::new().wait();
 
-    // Todo: remove this, details can be get from
-    // this [PR](https://github.com/arceos-hypervisor/arceos-umhv/pull/5).
-    vm.boot().unwrap();
-
-    panic!("VM[{}] boot failed", vm.id());
+    unreachable!("VM boot failed")
 }

@@ -19,16 +19,25 @@ use crate::{has_hardware_support, AxVMHal};
 const VM_ASPACE_BASE: usize = 0x0;
 const VM_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
 
+// Todo: should Vcpu related type be put into `axvcpu`` crate?
 #[allow(type_alias_bounds)] // we know the bound is not enforced here, we keep it for clarity
 type VCpu<H: AxVMHal> = AxVCpu<AxArchVCpuImpl<H>>;
+#[allow(type_alias_bounds)] 
+pub type AxVCpuRef<H: AxVMHal> = Arc<VCpu<H>>;
+
+#[allow(type_alias_bounds)] 
+pub type AxVMRef<H: AxVMHal> = Arc<AxVM<H>>;
 
 struct AxVMInnerConst<H: AxVMHal> {
     id: usize,
     config: AxVMConfig,
-    vcpu_list: Box<[VCpu<H>]>,
+    vcpu_list: Box<[AxVCpuRef<H>]>,
     // to be added: device_list: ...
     device_list: UnsafeCell<AxArchDeviceList<H>>,
 }
+
+unsafe impl<H: AxVMHal> Send for AxVMInnerConst<H> {}
+unsafe impl<H: AxVMHal> Sync for AxVMInnerConst<H> {}
 
 struct AxVMInnerMut<H: AxVMHal> {
     // Todo: use more efficient lock.
@@ -43,7 +52,7 @@ pub struct AxVM<H: AxVMHal> {
 }
 
 impl<H: AxVMHal> AxVM<H> {
-    pub fn new(config: AxVMConfig) -> AxResult<Arc<Self>> {
+    pub fn new(config: AxVMConfig) -> AxResult<AxVMRef<H>> {
         let result = Arc::new({
             let vcpu_pcpu_id_pairs = config.get_vcpu_pcpu_id_pairs();
 
@@ -52,12 +61,12 @@ impl<H: AxVMHal> AxVM<H> {
 
             for (vcpu_id, pcpu_id) in vcpu_pcpu_id_pairs {
                 // Todo: distinguish between `favor_phys_cpu` and `affinity`.
-                vcpu_list.push(VCpu::new(
+                vcpu_list.push(Arc::new(VCpu::new(
                     vcpu_id,
                     pcpu_id,
                     pcpu_id,
                     <AxArchVCpuImpl<H> as AxArchVCpu>::CreateConfig::default(),
-                )?);
+                )?));
             }
 
             // Set up Memory regions.
@@ -142,13 +151,13 @@ impl<H: AxVMHal> AxVM<H> {
     /// Retrieves the vCPU corresponding to the given vcpu_id for the VM.
     /// Returns None if the vCPU does not exist.
     #[inline]
-    pub fn vcpu(&self, vcpu_id: usize) -> Option<&VCpu<H>> {
-        self.vcpu_list().get(vcpu_id)
+    pub fn vcpu(&self, vcpu_id: usize) -> Option<AxVCpuRef<H>> {
+        self.vcpu_list().get(vcpu_id).cloned()
     }
 
     /// Returns a reference to the list of vCPUs corresponding to the VM.
     #[inline]
-    pub fn vcpu_list(&self) -> &[VCpu<H>] {
+    pub fn vcpu_list(&self) -> &[AxVCpuRef<H>] {
         &self.inner_const.vcpu_list
     }
 
