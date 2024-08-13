@@ -1,14 +1,13 @@
 use axvm::AxVMHal;
-use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
 // Todo: should we know about HostPhysAddr and HostVirtAddr here???
-use memory_addr::{PhysAddr, VirtAddr};
+use axaddrspace::{HostPhysAddr, HostVirtAddr};
 
 pub struct AxVMHalImpl;
 
 impl AxVMHal for AxVMHalImpl {
     type PagingHandler = axhal::paging::PagingHandlerImpl;
 
-    fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
+    fn virt_to_phys(vaddr: HostVirtAddr) -> HostPhysAddr {
         axhal::mem::virt_to_phys(vaddr)
     }
 

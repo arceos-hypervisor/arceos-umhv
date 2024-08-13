@@ -6,7 +6,6 @@
 use core::marker::PhantomData;
 
 use axerrno::{ax_err_type, AxResult};
-use memory_addr::PhysAddr;
 use page_table_entry::MappingFlags;
 use page_table_multiarch::PagingHandler;
 
@@ -14,7 +13,7 @@ use axaddrspace::{GuestPhysAddr, HostPhysAddr};
 
 use crate::AxVMHal;
 
-pub(crate) use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
+pub(crate) use axaddrspace::PAGE_SIZE_4K as PAGE_SIZE;
 
 /// Information about nested page faults.
 #[derive(Debug)]
@@ -53,7 +52,7 @@ impl<H: AxVMHal> PhysFrame<H> {
 
     pub const unsafe fn uninit() -> Self {
         Self {
-            start_paddr: PhysAddr::from(0),
+            start_paddr: HostPhysAddr::from(0),
             _phantom: PhantomData,
         }
     }

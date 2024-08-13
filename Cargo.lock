@@ -53,6 +53,7 @@ name = "arceos-vmm"
 version = "0.1.0"
 dependencies = [
  "arrayvec",
+ "axaddrspace",
  "axalloc",
  "axerrno",
  "axhal",
@@ -63,7 +64,6 @@ dependencies = [
  "fdt",
  "lazy_static",
  "log",
- "memory_addr",
  "page_table_entry",
  "percpu",
  "raw-cpuid 11.1.0",
@@ -123,7 +123,7 @@ checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 [[package]]
 name = "axaddrspace"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axaddrspace.git?rev=17378d#17378df30b3d3934cd67b424f418d11d0c206a68"
+source = "git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=refactor_addr#cf325a687802510a19b529a3e8d947eaaf949ee5"
 dependencies = [
  "axerrno",
  "bit_field",
@@ -425,7 +425,6 @@ dependencies = [
  "cortex-a",
  "log",
  "memoffset",
- "memory_addr",
  "numeric-enum-macro",
  "page_table_entry",
  "page_table_multiarch",
@@ -760,8 +759,7 @@ checksum = "4c59c2ac537a8198f50fe22e8783bdbef2011cd133d5c03748d1e5bc85c9fc4d"
 [[package]]
 name = "memory_set"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e46119df8fd48e57474c6db295a4b3068ed9fcbfd9c5467745880eb97cfc7808"
+source = "git+https://github.com/arceos-org/memory_set.git#825f93f714b9680f24fce15d2151374a0cd10799"
 dependencies = [
  "memory_addr",
 ]
