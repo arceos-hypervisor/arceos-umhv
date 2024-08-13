@@ -2,8 +2,8 @@ use bit_field::BitField;
 use bitflags::bitflags;
 
 use axaddrspace::HostPhysAddr;
+use axaddrspace::PAGE_SIZE_4K as PAGE_SIZE;
 use axerrno::AxResult;
-use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
 
 use crate::arch::msr::{Msr, MsrReadWrite};
 use crate::mm::PhysFrame;

@@ -22,11 +22,10 @@ axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", rev = "55973
 # System independent crates provided by ArceOS.
 axerrno = "0.1.0"
 # kspin = "0.1.0"
-memory_addr = "0.2.0"
 page_table_entry = { version = "0.3.3", features = ["arm-el2"] }
 page_table_multiarch = "0.3.3"
 percpu = { version = "0.1.4", features = ["arm-el2"] }
-axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git", rev = "17378d" }
+axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git", branch = "refactor_addr" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
