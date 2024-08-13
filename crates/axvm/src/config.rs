@@ -167,14 +167,17 @@ pub struct AxVMCrateConfig {
     cpu_set: usize,
 
     entry_point: usize,
-    kernel_path: String,
-    kernel_load_addr: usize,
-    bios_path: Option<String>,
-    bios_load_addr: Option<usize>,
-    dtb_path: Option<String>,
-    dtb_load_addr: Option<usize>,
-    ramdisk_path: Option<String>,
-    ramdisk_load_addr: Option<usize>,
+
+    // VM image infos.
+    pub kernel_path: String,
+    pub kernel_load_addr: usize,
+    pub bios_path: Option<String>,
+    pub bios_load_addr: Option<usize>,
+    pub dtb_path: Option<String>,
+    pub dtb_load_addr: Option<usize>,
+    pub ramdisk_path: Option<String>,
+    pub ramdisk_load_addr: Option<usize>,
+    
     disk_path: Option<String>,
 
     /// Memory Information
@@ -192,21 +195,5 @@ impl AxVMCrateConfig {
             )
         })?;
         Ok(config)
-    }
-
-    /// Returns the VM image file path, in the following order:
-    /// (
-    ///     kernel image file path,
-    ///     BIOS image file path (optional, return None if no BIOS image is needed),
-    ///     device tree image file path (optional, return None if no DTB image is needed),
-    ///     ramdisk image file path (optional, return None if no ramdisk image is needed),
-    /// )
-    pub fn get_images_path(&self) -> (String, Option<String>, Option<String>, Option<String>) {
-        (
-            self.kernel_path.clone(),
-            self.bios_path.clone(),
-            self.dtb_path.clone(),
-            self.ramdisk_path.clone(),
-        )
     }
 }

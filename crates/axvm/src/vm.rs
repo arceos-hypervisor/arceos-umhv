@@ -6,12 +6,11 @@ use core::cell::UnsafeCell;
 
 use axerrno::{ax_err, ax_err_type, AxResult};
 use memory_addr::VirtAddr;
-use page_table_multiarch::PagingHandler;
 use spin::Mutex;
 
 use axvcpu::{AxArchVCpu, AxVCpu};
 
-use axaddrspace::{AddrSpace, GuestPhysAddr, HostPhysAddr, HostVirtAddr, MappingFlags};
+use axaddrspace::{AddrSpace, GuestPhysAddr, HostPhysAddr, MappingFlags};
 
 use crate::arch::{AxArchDeviceList, AxArchVCpuImpl};
 use crate::config::AxVMConfig;
@@ -158,69 +157,24 @@ impl<H: AxVMHal> AxVM<H> {
         self.inner_mut.address_space.lock().page_table_root()
     }
 
-    /// Returns the virtual addresses in `HostVirtAddr`
-    /// of where the VM images is loaded, in the following order:
-    /// (
-    ///     kernel image load address,
-    ///     BIOS image load address (optional, return None if no BIOS image is needed),
-    ///     device tree image load address (optional, return None if no DTB image is needed),
-    ///     ramdisk image load address (optional, return None if no ramdisk image is needed),
-    /// )
+    /// Returns guest VM image load region in `Vec<&'static mut [u8]>`,
+    /// according to the given `image_load_gpa` and `image_size.
+    /// `Vec<&'static mut [u8]>` is a series of (HVA) address segments,
+    /// which may correspond to non-contiguous physical addresses,
     ///
-    /// FIXME: 
-    /// 1. Find a more elegant way to manage potentially non-contiguous physical memory
+    /// FIXME:
+    /// Find a more elegant way to manage potentially non-contiguous physical memory
     ///         instead of `Vec<&'static mut [u8]>`.
-    /// 2. Return Error for address translated error instead of panic.
-    pub fn get_images_load_addrs(
+    pub fn get_image_load_region(
         &self,
-    ) -> AxResult<(
-        Vec<&'static mut [u8]>,
-        Option<HostVirtAddr>,
-        Option<HostVirtAddr>,
-        Option<HostVirtAddr>,
-    )> {
-        let image_config = self.inner_const.config.image_config();
+        image_load_gpa: GuestPhysAddr,
+        image_size: usize,
+    ) -> AxResult<Vec<&'static mut [u8]>> {
         let addr_space = self.inner_mut.address_space.lock();
-
-        // FIXME: do we need to know the actual size of the image file,
-        //        and when is it appropriate to obtain it?
-        let kernel_load_hva = addr_space
-            .translated_byte_buffer(image_config.kernel_load_gpa, 0x100000)
+        let image_load_hva = addr_space
+            .translated_byte_buffer(image_load_gpa, image_size)
             .expect("Failed to translate kernel image load address");
-
-        // FIXME: There might be a bug here if the physical memory is non-contiguous.
-        let bios_load_hva = image_config.bios_load_gpa.map(|bios_load_gpa| {
-            H::PagingHandler::phys_to_virt(
-                addr_space
-                    .translate(bios_load_gpa)
-                    .expect("Failed to translate BIOS load address"),
-            )
-        });
-
-        // FIXME: There might be a bug here if the physical memory is non-contiguous.
-        let dtb_load_hva = image_config.dtb_load_gpa.map(|dtb_load_gpa| {
-            H::PagingHandler::phys_to_virt(
-                addr_space
-                    .translate(dtb_load_gpa)
-                    .expect("Failed to translate BIOS load address"),
-            )
-        });
-
-        // FIXME: There might be a bug here if the physical memory is non-contiguous.
-        let ramdisk_load_hva = image_config.ramdisk_load_gpa.map(|ramdisk_load_gpa| {
-            H::PagingHandler::phys_to_virt(
-                addr_space
-                    .translate(ramdisk_load_gpa)
-                    .expect("Failed to translate BIOS load address"),
-            )
-        });
-
-        Ok((
-            kernel_load_hva,
-            bios_load_hva,
-            dtb_load_hva,
-            ramdisk_load_hva,
-        ))
+        Ok(image_load_hva)
     }
 
     pub fn boot(&self) -> AxResult {
