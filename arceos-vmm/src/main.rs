@@ -19,7 +19,7 @@ use crate::hal::AxVMHalImpl;
 #[percpu::def_percpu]
 pub static mut AXVM_PER_CPU: AxVMPerCpu<AxVMHalImpl> = AxVMPerCpu::new_uninit();
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[no_mangle]
 fn main() {
     info!("Starting virtualization...");
 
@@ -60,7 +60,9 @@ fn main() {
     info!("VM[{}] images load success, setting up vcpus...", vm.id());
     vmm::setup_vm_vcpus(vm.clone());
 
-    info!("Boot VM[{}]...", vm.id());
+    vm.boot()
+        .expect(format!("Failed to boot VM[{}]", vm.id()).as_str());
+
     axtask::WaitQueue::new().wait();
 
     unreachable!("VM boot failed")

@@ -3,6 +3,7 @@ use alloc::format;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use core::cell::UnsafeCell;
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use axerrno::{ax_err, ax_err_type, AxResult};
 use memory_addr::VirtAddr;
@@ -22,10 +23,10 @@ const VM_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
 // Todo: should Vcpu related type be put into `axvcpu`` crate?
 #[allow(type_alias_bounds)] // we know the bound is not enforced here, we keep it for clarity
 type VCpu<H: AxVMHal> = AxVCpu<AxArchVCpuImpl<H>>;
-#[allow(type_alias_bounds)] 
+#[allow(type_alias_bounds)]
 pub type AxVCpuRef<H: AxVMHal> = Arc<VCpu<H>>;
 
-#[allow(type_alias_bounds)] 
+#[allow(type_alias_bounds)]
 pub type AxVMRef<H: AxVMHal> = Arc<AxVM<H>>;
 
 struct AxVMInnerConst<H: AxVMHal> {
@@ -47,6 +48,7 @@ struct AxVMInnerMut<H: AxVMHal> {
 
 /// A Virtual Machine.
 pub struct AxVM<H: AxVMHal> {
+    running: AtomicBool,
     inner_const: AxVMInnerConst<H>,
     inner_mut: AxVMInnerMut<H>,
 }
@@ -109,6 +111,7 @@ impl<H: AxVMHal> AxVM<H> {
             let device_list = AxArchDeviceList::<H>::new();
 
             Self {
+                running: AtomicBool::new(false),
                 inner_const: AxVMInnerConst {
                     id: config.id(),
                     config,
@@ -144,7 +147,7 @@ impl<H: AxVMHal> AxVM<H> {
 
     /// Returns the VM id.
     #[inline]
-    pub fn id(&self) -> usize {
+    pub const fn id(&self) -> usize {
         self.inner_const.id
     }
 
@@ -153,6 +156,12 @@ impl<H: AxVMHal> AxVM<H> {
     #[inline]
     pub fn vcpu(&self, vcpu_id: usize) -> Option<AxVCpuRef<H>> {
         self.vcpu_list().get(vcpu_id).cloned()
+    }
+
+    /// Returns the number of vCPUs corresponding to the VM.
+    #[inline]
+    pub const fn vcpu_num(&self) -> usize {
+        self.inner_const.vcpu_list.len()
     }
 
     /// Returns a reference to the list of vCPUs corresponding to the VM.
@@ -186,11 +195,19 @@ impl<H: AxVMHal> AxVM<H> {
         Ok(image_load_hva)
     }
 
+    pub fn running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
+    }
+
     pub fn boot(&self) -> AxResult {
         if !has_hardware_support() {
             ax_err!(Unsupported, "Hardware does not support virtualization")
+        } else if self.running() {
+            ax_err!(BadState, format!("VM[{}] is running", self.id()))
         } else {
-            self.run_vcpu(0)
+            info!("Booting VM[{}]", self.id());
+            self.running.store(true, Ordering::Relaxed);
+            Ok(())
         }
     }
 

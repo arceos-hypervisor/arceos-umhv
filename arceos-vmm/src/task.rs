@@ -1,5 +1,3 @@
-use alloc::sync::Arc;
-
 use axvm::{AxVCpuRef, AxVMRef};
 
 use crate::hal::AxVMHalImpl;

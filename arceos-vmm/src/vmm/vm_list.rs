@@ -59,6 +59,7 @@ pub fn push_vm(vm: AxVMRef<AxVMHalImpl>) {
 /// # Returns
 ///
 /// * `Option<AxVMRef<AxVMHalImpl>>` - The removed VM reference if it exists, or `None` if not.
+#[allow(unused)]
 pub fn remove_vm(vm_id: usize) -> Option<AxVMRef<AxVMHalImpl>> {
     GLOBAL_VM_LIST.lock().remove_vm(vm_id)
 }

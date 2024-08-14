@@ -6,3 +6,23 @@ exclude = ["guest/nimbos"]
 
 [profile.release]
 lto = true
+
+[workspace.dependencies]
+axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f" }
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f" }
+axtask = { git = "https://github.com/arceos-org/arceos.git", branch = "monolithic" }
+
+# Since we need to rely on the `axtask` module from the `monolithic` branch of arceos-org/arceos repository, which supports TaskExt,
+# and this module depends on different versions of `axhal` and `axconfig`, 
+# (ref: https://github.com/arceos-org/arceos/blob/monolithic/modules/axtask/Cargo.toml)
+# we temporarily use [patch] here to unify the dependency versions of these modules.
+[patch."https://github.com/arceos-org/arceos.git"]
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f" }
+axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f" }
+
+# The complexity: 
+# `axstd` depends on the `axtask` from the `arceos-hypervisor\arceos` repository when the 'multitask' feature is enabled. 
+# Here, we use [patch] to unify `axtask` to the one from the `monolithic` branch of the arceos-org/arceos repository.
+[patch."https://github.com/arceos-hypervisor/arceos.git"]
+axtask = { git = "https://github.com/arceos-org/arceos.git", branch = "monolithic" }

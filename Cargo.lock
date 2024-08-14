@@ -55,9 +55,9 @@ dependencies = [
  "arrayvec",
  "axalloc",
  "axerrno",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
  "axstd",
- "axtask 0.1.0 (git+https://github.com/arceos-org/arceos.git?branch=monolithic)",
+ "axtask",
  "axvm",
  "bitflags 2.6.0",
  "cfg-if",
@@ -76,19 +76,20 @@ dependencies = [
 [[package]]
 name = "arceos_api"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "axalloc",
- "axconfig 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axconfig",
  "axdriver",
  "axerrno",
  "axfeat",
  "axfs",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
  "axio",
- "axlog 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axlog",
  "axruntime",
  "axsync",
+ "axtask",
 ]
 
 [[package]]
@@ -142,7 +143,7 @@ dependencies = [
 [[package]]
 name = "axalloc"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "allocator",
  "axerrno",
@@ -150,15 +151,6 @@ dependencies = [
  "kspin",
  "log",
  "memory_addr",
-]
-
-[[package]]
-name = "axconfig"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/arceos.git?branch=monolithic#d4cf00a7a62d9b7c3588f9f796a64e0f25ccdaab"
-dependencies = [
- "serde",
- "toml_edit 0.22.17",
 ]
 
 [[package]]
@@ -173,15 +165,15 @@ dependencies = [
 [[package]]
 name = "axdriver"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "axalloc",
- "axconfig 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axconfig",
  "axdriver_base",
  "axdriver_block",
  "axdriver_pci",
  "axdriver_virtio",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
  "cfg-if",
  "log",
 ]
@@ -230,20 +222,22 @@ dependencies = [
 [[package]]
 name = "axfeat"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "axalloc",
  "axdriver",
  "axfs",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
- "axlog 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
+ "axlog",
  "axruntime",
+ "axsync",
+ "axtask",
 ]
 
 [[package]]
 name = "axfs"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "axdriver",
  "axdriver_block",
@@ -296,43 +290,14 @@ dependencies = [
 [[package]]
 name = "axhal"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/arceos.git?branch=monolithic#d4cf00a7a62d9b7c3588f9f796a64e0f25ccdaab"
- "arm_pl011",
- "axconfig 0.1.0 (git+https://github.com/arceos-org/arceos.git?branch=monolithic)",
- "axlog 0.1.0 (git+https://github.com/arceos-org/arceos.git?branch=monolithic)",
- "bitflags 2.6.0",
- "cfg-if",
- "dw_apb_uart",
- "handler_table",
- "int_ratio",
- "kernel_guard",
- "kspin",
- "lazyinit",
- "linkme",
- "log",
- "memory_addr",
- "page_table_entry",
- "percpu",
- "raw-cpuid 11.1.0",
- "riscv 0.11.1",
- "sbi-rt 0.0.3",
- "static_assertions",
- "tock-registers",
- "x2apic",
- "x86",
- "x86_64 0.15.1",
-]
-
-[[package]]
-name = "axhal"
-version = "0.1.0"
 source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "aarch64-cpu",
  "arm_gicv2",
+ "arm_pl011",
  "axalloc",
- "axconfig 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
- "axlog 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axconfig",
+ "axlog",
  "bitflags 2.6.0",
  "cfg-if",
  "cortex-a",
@@ -370,17 +335,6 @@ dependencies = [
 [[package]]
 name = "axlog"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/arceos.git?branch=monolithic#d4cf00a7a62d9b7c3588f9f796a64e0f25ccdaab"
-dependencies = [
- "cfg-if",
- "crate_interface",
- "kspin",
- "log",
-]
-
-[[package]]
-name = "axlog"
-version = "0.1.0"
 source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "cfg-if",
@@ -392,11 +346,11 @@ dependencies = [
 [[package]]
 name = "axmm"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
- "axconfig 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axconfig",
  "axerrno",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
  "kspin",
  "lazyinit",
  "log",
@@ -406,15 +360,16 @@ dependencies = [
 [[package]]
 name = "axruntime"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "axalloc",
- "axconfig 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axconfig",
  "axdriver",
  "axfs",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
- "axlog 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
+ "axlog",
  "axmm",
+ "axtask",
  "chrono",
  "crate_interface",
 ]
@@ -422,7 +377,7 @@ dependencies = [
 [[package]]
 name = "axstd"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
  "arceos_api",
  "axerrno",
@@ -434,9 +389,9 @@ dependencies = [
 [[package]]
 name = "axsync"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=5c9ee79#5c9ee79277f2455e84e90195f784a264aaebc79b"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
 dependencies = [
- "axtask 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axtask",
  "kspin",
 ]
 
@@ -445,8 +400,8 @@ name = "axtask"
 version = "0.1.0"
 source = "git+https://github.com/arceos-org/arceos.git?branch=monolithic#d4cf00a7a62d9b7c3588f9f796a64e0f25ccdaab"
 dependencies = [
- "axconfig 0.1.0 (git+https://github.com/arceos-org/arceos.git?branch=monolithic)",
- "axhal 0.1.0 (git+https://github.com/arceos-org/arceos.git?branch=monolithic)",
+ "axconfig",
+ "axhal",
  "cfg-if",
  "crate_interface",
  "kernel_guard",
@@ -457,16 +412,6 @@ dependencies = [
  "percpu",
  "scheduler",
  "timer_list",
-]
-
-[[package]]
-name = "axtask"
-version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f#f04a23fe4adacd797bc146642f30295d359c9705"
-dependencies = [
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
- "cfg-if",
- "log",
 ]
 
 [[package]]
@@ -486,7 +431,7 @@ dependencies = [
  "aarch64-cpu",
  "axaddrspace",
  "axerrno",
- "axhal 0.1.0 (git+https://github.com/arceos-hypervisor/arceos.git?rev=f04a23f)",
+ "axhal",
  "axvcpu",
  "bit_field",
  "bitflags 2.6.0",
