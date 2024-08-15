@@ -1,6 +1,9 @@
 use aarch64_cpu::registers::*;
 use core::arch::global_asm;
 use core::marker::PhantomData;
+
+use axvcpu::AxVCpuExitReason;
+use cortex_a::registers::*;
 use tock_registers::interfaces::*;
 
 use axaddrspace::HostPhysAddr;
@@ -85,7 +88,7 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
         Ok(())
     }
 
-    fn run(&mut self) -> AxResult<AxArchVCpuExitReason> {
+    fn run(&mut self) -> AxResult<AxVCpuExitReason> {
         self.restore_vm_system_regs();
         self.run_guest();
         self.vmexit_handler()

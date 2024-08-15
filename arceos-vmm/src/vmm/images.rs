@@ -6,13 +6,12 @@ use axerrno::{ax_err, ax_err_type, AxResult};
 use memory_addr::VirtAddr;
 
 use axvm::config::AxVMCrateConfig;
-use axvm::AxVMRef;
 
-use crate::hal::AxVMHalImpl;
+use crate::vmm::VMRef;
 
 /// Loads the VM image files from the filesystem
 /// into the guest VM's memory space based on the VM configuration.
-pub fn load_vm_images(config: AxVMCrateConfig, vm: AxVMRef<AxVMHalImpl>) -> AxResult {
+pub fn load_vm_images(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     // Load kernel image.
     load_vm_image(
         config.kernel_path,
@@ -47,11 +46,7 @@ pub fn load_vm_images(config: AxVMCrateConfig, vm: AxVMRef<AxVMHalImpl>) -> AxRe
     Ok(())
 }
 
-fn load_vm_image(
-    image_path: String,
-    image_load_gpa: VirtAddr,
-    vm: AxVMRef<AxVMHalImpl>,
-) -> AxResult {
+fn load_vm_image(image_path: String, image_load_gpa: VirtAddr, vm: VMRef) -> AxResult {
     use std::io::{BufReader, Read};
     let (image_file, image_size) = open_image_file(image_path.as_str())?;
 

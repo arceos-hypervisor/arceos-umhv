@@ -9,7 +9,7 @@ use axerrno::{ax_err, ax_err_type, AxResult};
 use memory_addr::VirtAddr;
 use spin::Mutex;
 
-use axvcpu::{AxArchVCpu, AxVCpu};
+use axvcpu::{AxArchVCpu, AxVCpu, AxVCpuExitReason};
 
 use axaddrspace::{AddrSpace, GuestPhysAddr, HostPhysAddr, MappingFlags};
 
@@ -215,36 +215,55 @@ impl<H: AxVMHal> AxVM<H> {
         unsafe { &mut *self.inner_const.device_list.get() }
     }
 
-    pub fn run_vcpu(&self, vcpu_id: usize) -> AxResult {
+    pub fn run_vcpu(&self, vcpu_id: usize) -> AxResult<VCpuStatus> {
         let vcpu = self
             .vcpu(vcpu_id)
             .ok_or_else(|| ax_err_type!(InvalidInput, "Invalid vcpu_id"))?;
         vcpu.bind()?;
+
+        let mut vcpu_status = VCpuStatus::Running;
+
         loop {
-            // todo: device access
             let exit_reason = vcpu.run()?;
 
+            trace!("{exit_reason:#x?}");
             match exit_reason {
-                axvcpu::AxArchVCpuExitReason::MmioRead { addr, width: _ } => {
-                    debug!("EPT from addr {:#x}", addr);
-
-                    let paddr = self
-                        .inner_mut
-                        .address_space
-                        .lock()
-                        .translate(VirtAddr::from(addr));
-
-                    debug!("EPT mapped to {:#x?}", paddr);
-
-                    break;
+                AxVCpuExitReason::Hypercall { nr, args } => {
+                    debug!("Hypercall [{}] args {:x?}", nr, args);
+                }
+                AxVCpuExitReason::Nothing => {}
+                AxVCpuExitReason::Halt => {
+                    vcpu_status = VCpuStatus::Yield;
+                }
+                AxVCpuExitReason::FailEntry {
+                    hardware_entry_failure_reason: _,
+                } => {
+                    vcpu_status = VCpuStatus::Exit;
                 }
                 _ => {
                     let device_list = self.get_device_list();
                     device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason)?;
                 }
             }
+            if vcpu_status != VCpuStatus::Running {
+                break;
+            }
         }
         vcpu.unbind()?;
-        panic!("VCpu [{}] halt", vcpu.id())
+        Ok(vcpu_status)
     }
+}
+
+numeric_enum_macro::numeric_enum! {
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+/// VCpu status after a VM Exit.
+/// Todo
+pub enum VCpuStatus {
+    Running = 0,
+    Yield = 1,
+    Shutdown = 2,
+    Exit = 3,
+}
 }

@@ -417,7 +417,7 @@ dependencies = [
 [[package]]
 name = "axvcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvcpu.git?rev=559734#559734c55ef3bc089c031f89fc77424292ffd676"
+source = "git+https://github.com/arceos-hypervisor/axvcpu.git#f25092d093a0e518d2fb1dda3b2b899fe7acf4d4"
 dependencies = [
  "axerrno",
  "memory_addr",

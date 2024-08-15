@@ -17,7 +17,8 @@ serde = { version = "1.0.204", default-features = false, features = ["derive"] }
 toml = { git = "https://github.com/arceos-hypervisor/toml.git", branch = "no_std" }
 spin = "0.9"
 
-axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", rev = "559734" }
+axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git" }
+# axvcpu = { path = "../../../arceos-crates/axvcpu" }
 
 # System independent crates provided by ArceOS.
 axerrno = "0.1.0"

@@ -89,7 +89,7 @@ impl From<AccessWidth> for usize {
 type Port = u16;
 
 /// The result of `AxArchVCpu::run`.
-pub enum AxArchVCpuExitReason {
+pub enum AxVCpuExitReason {
     /// The instruction executed by the vcpu performs a MMIO read operation.
     MmioRead {
         addr: GuestPhysAddr,
@@ -211,7 +211,7 @@ impl<H: AxVMHal> AxVCpu<H> {
         unsafe { &mut *self.arch_vcpu.get() }
     }
 
-    pub fn run(&self) -> AxResult<AxArchVCpuExitReason> {
+    pub fn run(&self) -> AxResult<AxVCpuExitReason> {
         self.transition_state(VCpuState::Ready, VCpuState::Running)?;
         set_current_vcpu(&self);
         let result = self.get_arch_vcpu().run()?;

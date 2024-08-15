@@ -11,8 +11,7 @@ mod hal;
 mod task;
 mod vmm;
 
-use axvm::config::{AxVMConfig, AxVMCrateConfig};
-use axvm::{AxVM, AxVMPerCpu};
+use axvm::AxVMPerCpu;
 
 use crate::hal::AxVMHalImpl;
 
@@ -34,36 +33,12 @@ fn main() {
         .hardware_enable()
         .expect("Failed to enable virtualization");
 
-    // Config file for guest VM should be read into memory in a more flexible way.
-    // FIXME: remove this hardcode.
-    #[cfg(target_arch = "x86_64")]
-    let raw_vm_config = core::include_str!("../configs/nimbos-x86.toml");
-    #[cfg(target_arch = "aarch64")]
-    let raw_vm_config = core::include_str!("../configs/nimbos-aarch64.toml");
-    #[cfg(target_arch = "riscv64")]
-    let raw_vm_config = core::include_str!("../configs/nimbos-riscv64.toml");
+    vmm::init();
 
-    let vm_create_config =
-        AxVMCrateConfig::from_toml(raw_vm_config).expect("Failed to resolve VM config");
+    vmm::start();
 
-    let config = AxVMConfig::from(vm_create_config.clone());
-
-    // Create VM.
-    let vm = AxVM::<AxVMHalImpl>::new(config).expect("Failed to create VM");
-    vmm::push_vm(vm.clone());
-
-    // Load corresponding images for VM.
-    info!("VM[{}] created success, loading images...", vm.id());
-    vmm::load_vm_images(vm_create_config, vm.clone()).expect("Failed to load VM images");
-
-    // Setup vcpus, spawn axtask for VCpu.
-    info!("VM[{}] images load success, setting up vcpus...", vm.id());
-    vmm::setup_vm_vcpus(vm.clone());
-
-    vm.boot()
-        .expect(format!("Failed to boot VM[{}]", vm.id()).as_str());
-
+    // Todo: move this to `vmm::start()`.
     axtask::WaitQueue::new().wait();
 
-    unreachable!("VM boot failed")
+    unreachable!("VMM start failed")
 }

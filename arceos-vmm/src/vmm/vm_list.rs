@@ -1,13 +1,12 @@
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 
 use spin::Mutex;
 
-use axvm::AxVMRef;
-
-use crate::hal::AxVMHalImpl;
+use crate::vmm::VMRef;
 
 struct VMList {
-    vm_list: BTreeMap<usize, AxVMRef<AxVMHalImpl>>,
+    vm_list: BTreeMap<usize, VMRef>,
 }
 
 impl VMList {
@@ -17,7 +16,7 @@ impl VMList {
         }
     }
 
-    fn push_vm(&mut self, vm_id: usize, vm: AxVMRef<AxVMHalImpl>) {
+    fn push_vm(&mut self, vm_id: usize, vm: VMRef) {
         if self.vm_list.contains_key(&vm_id) {
             warn!(
                 "VM[{}] already exists, push VM failed, just return ...",
@@ -29,11 +28,11 @@ impl VMList {
     }
 
     #[allow(unused)]
-    fn remove_vm(&mut self, vm_id: usize) -> Option<AxVMRef<AxVMHalImpl>> {
+    fn remove_vm(&mut self, vm_id: usize) -> Option<VMRef> {
         self.vm_list.remove(&vm_id)
     }
 
-    fn get_vm_by_id(&self, vm_id: usize) -> Option<AxVMRef<AxVMHalImpl>> {
+    fn get_vm_by_id(&self, vm_id: usize) -> Option<VMRef> {
         self.vm_list.get(&vm_id).cloned()
     }
 }
@@ -46,7 +45,7 @@ static GLOBAL_VM_LIST: Mutex<VMList> = Mutex::new(VMList::new());
 /// # Arguments
 ///
 /// * `vm` - A reference to the VM instance.
-pub fn push_vm(vm: AxVMRef<AxVMHalImpl>) {
+pub fn push_vm(vm: VMRef) {
     GLOBAL_VM_LIST.lock().push_vm(vm.id(), vm)
 }
 
@@ -58,9 +57,9 @@ pub fn push_vm(vm: AxVMRef<AxVMHalImpl>) {
 ///
 /// # Returns
 ///
-/// * `Option<AxVMRef<AxVMHalImpl>>` - The removed VM reference if it exists, or `None` if not.
+/// * `Option<VMRef>` - The removed VM reference if it exists, or `None` if not.
 #[allow(unused)]
-pub fn remove_vm(vm_id: usize) -> Option<AxVMRef<AxVMHalImpl>> {
+pub fn remove_vm(vm_id: usize) -> Option<VMRef> {
     GLOBAL_VM_LIST.lock().remove_vm(vm_id)
 }
 
@@ -72,8 +71,17 @@ pub fn remove_vm(vm_id: usize) -> Option<AxVMRef<AxVMHalImpl>> {
 ///
 /// # Returns
 ///
-/// * `Option<AxVMRef<AxVMHalImpl>>` - The VM reference if it exists, or `None` if not.
+/// * `Option<VMRef>` - The VM reference if it exists, or `None` if not.
 #[allow(unused)]
-pub fn get_vm_by_id(vm_id: usize) -> Option<AxVMRef<AxVMHalImpl>> {
+pub fn get_vm_by_id(vm_id: usize) -> Option<VMRef> {
     GLOBAL_VM_LIST.lock().get_vm_by_id(vm_id)
+}
+
+pub fn get_vm_list() -> Vec<VMRef> {
+    let global_vm_list = GLOBAL_VM_LIST.lock().vm_list.clone();
+    let mut vm_list = Vec::with_capacity(global_vm_list.len());
+    for (_id, vm) in global_vm_list {
+        vm_list.push(vm.clone());
+    }
+    vm_list
 }
