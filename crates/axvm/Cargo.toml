@@ -40,9 +40,15 @@ sbi-spec = { version = "0.0.6", features = ["legacy"] }
 sbi-rt = { version = "0.0.2", features = ["integer-impls", "legacy"] }
 tock-registers = "0.8.1"
 memoffset = { version = ">=0.6.5", features = ["unstable_const"] }
+axhal = { path = "../../../arceos/modules/axhal", features = ["paging"] }
+axconfig = { path = "../../../arceos/modules/axconfig" }
+kspin = "0.1"
+lazyinit = "0.2"
+timer_list = "0.1.0"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f", features = ["hv"] }
+# axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f", features = ["hv"] }
+axhal = { path = "../../../arceos/modules/axhal", features = ["paging"] }
 cortex-a = "8.1.1"
 aarch64-cpu = "9.3"
 smccc = "0.1.1"

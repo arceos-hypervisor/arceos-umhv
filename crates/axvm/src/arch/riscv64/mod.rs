@@ -8,6 +8,10 @@ mod vcpu;
 mod vm_pages;
 mod vmexit;
 
+pub mod timers;
+use timer_list::{TimeValue, TimerEvent, TimerList};
+
+
 use self::csrs::{traps, RiscvCsrTrait, CSR};
 pub(crate) use self::detect::detect_h_extension as has_hardware_support;
 pub use self::device_list::DeviceList as AxArchDeviceList;
@@ -25,10 +29,27 @@ pub struct PerCpu<H: AxVMHal> {
 }
 
 impl<H: AxVMHal> AxVMArchPerCpu for PerCpu<H> {
-    fn new(_cpu_id: usize) -> AxResult<Self> {
+    fn new(cpu_id: usize) -> AxResult<Self> {
         unsafe {
             setup_csrs();
         }
+
+        #[cfg(feature = "irq")]
+        if cpu_id == 0 {
+            axhal::irq::register_handler(TIMER_IRQ_NUM, || {
+                unsafe {
+                    sie::clear_stimer();
+                }
+                timers::check_events();
+                timers::scheduler_next_event();
+                unsafe {
+                    sie::set_stimer();
+                }
+            });
+        }
+
+        timers::init();
+        
 
         Ok(Self {
             _marker: core::marker::PhantomData,

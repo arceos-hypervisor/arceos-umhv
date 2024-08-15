@@ -15,6 +15,7 @@ use axvcpu::AxArchVCpuExitReason;
 
 use super::csrs::defs::hstatus;
 use super::regs::{GeneralPurposeRegisters, GprIndex};
+use super::timers::{register_timer, TimerEventFn};
 use sbi_rt::{pmu_counter_get_info, pmu_counter_stop};
 
 /// Hypervisor GPR and CSR state which must be saved/restored when entering/exiting virtualization.
@@ -347,9 +348,13 @@ impl<H: AxVMHal> VCpu<H> {
                             // Clear guest timer interrupt
                             CSR.hvip
                                 .read_and_clear_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
-                            //  Enable host timer interrupt
-                            CSR.sie
-                                .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
+                            // //  Enable host timer interrupt
+                            // CSR.sie
+                            //     .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
+                            register_timer(timer, TimerEventFn::new(|now| {
+                                CSR.hvip
+                                    .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
+                            }));
                         }
                         SbiMessage::Reset(_) => {
                             sbi_rt::system_reset(sbi_rt::Shutdown, sbi_rt::SystemFailure);
@@ -371,11 +376,12 @@ impl<H: AxVMHal> VCpu<H> {
             Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 // debug!("timer irq emulation");
                 // Enable guest timer interrupt
-                CSR.hvip
-                    .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
-                // Clear host timer interrupt
-                CSR.sie
-                    .read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
+                // CSR.hvip
+                //     .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
+                // // Clear host timer interrupt
+                // CSR.sie
+                //     .read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
+                sbi_rt::set_timer(0);
                 Ok(AxArchVCpuExitReason::Nothing)
             }
             Trap::Interrupt(Interrupt::SupervisorExternal) => {
