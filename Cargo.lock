@@ -58,6 +58,7 @@ dependencies = [
  "axhal",
  "axstd",
  "axtask",
+ "axvcpu",
  "axvm",
  "bitflags 2.6.0",
  "cfg-if",
@@ -417,8 +418,8 @@ dependencies = [
 [[package]]
 name = "axvcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvcpu.git#f25092d093a0e518d2fb1dda3b2b899fe7acf4d4"
 dependencies = [
+ "axaddrspace",
  "axerrno",
  "memory_addr",
  "percpu",

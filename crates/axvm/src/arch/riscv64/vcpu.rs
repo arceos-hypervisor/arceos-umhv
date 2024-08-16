@@ -10,7 +10,7 @@ use riscv::register::{htinst, htval, scause, sstatus, stval};
 use super::csrs::{traps, RiscvCsrTrait, CSR};
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::AxVMHal;
-use axaddrspace::HostPhysAddr;
+use axaddrspace::{GuestPhysAddr, HostPhysAddr, MappingFlags};
 use axvcpu::AxVCpuExitReason;
 
 use super::csrs::defs::hstatus;
@@ -257,9 +257,9 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
         Ok(())
     }
 
-    fn set_entry(&mut self, entry: usize) -> AxResult {
+    fn set_entry(&mut self, entry: GuestPhysAddr) -> AxResult {
         let regs = &mut self.regs;
-        regs.guest_regs.sepc = entry;
+        regs.guest_regs.sepc = entry.as_usize();
         Ok(())
     }
 
@@ -384,7 +384,10 @@ impl<H: AxVMHal> VCpu<H> {
             Trap::Exception(Exception::LoadGuestPageFault)
             | Trap::Exception(Exception::StoreGuestPageFault) => {
                 let fault_addr = self.regs.trap_csrs.htval << 2 | self.regs.trap_csrs.stval & 0x3;
-                Ok(AxVCpuExitReason::NestedPageFault { addr: fault_addr })
+                Ok(AxVCpuExitReason::NestedPageFault {
+                    addr: GuestPhysAddr::from(fault_addr),
+                    access_flags: MappingFlags::empty(),
+                })
             }
             _ => {
                 panic!(

@@ -3,7 +3,7 @@ use core::arch::global_asm;
 use core::marker::PhantomData;
 use tock_registers::interfaces::*;
 
-use axaddrspace::HostPhysAddr;
+use axaddrspace::{GuestPhysAddr, HostPhysAddr};
 use axerrno::AxResult;
 use axvcpu::AxVCpuExitReason;
 
@@ -73,9 +73,9 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
         Ok(())
     }
 
-    fn set_entry(&mut self, entry: usize) -> AxResult {
-        debug!("set vcpu entry:{:#x}", entry);
-        self.set_elr(entry);
+    fn set_entry(&mut self, entry: GuestPhysAddr) -> AxResult {
+        debug!("set vcpu entry:{:?}", entry);
+        self.set_elr(entry.as_usize());
         Ok(())
     }
 

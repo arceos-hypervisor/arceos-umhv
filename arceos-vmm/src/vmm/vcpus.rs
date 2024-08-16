@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use spin::Mutex;
 
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
-use axvm::VCpuStatus;
+use axvcpu::AxVCpuExitReason;
 
 use crate::task::TaskExt;
 use crate::vmm::VMRef;
@@ -79,23 +79,30 @@ pub fn setup_vm_vcpus(vm: VMRef) {
 
                 info!("VM[{}] Vcpu[{}] running...", vm.id(), vcpu.id());
 
-                // vcpu.bind().unwrap_or_else(|err| {
-                //     warn!("VCpu {} failed to bind, {:?}", vcpu.id(), err);
-                //     axtask::exit(err.code());
-                // });
-
                 loop {
                     match vm.run_vcpu(vcpu_id) {
-                        Ok(status) => match status {
-                            VCpuStatus::Running => { /*Do nothing*/ }
-                            VCpuStatus::Yield => axtask::yield_now(),
-                            VCpuStatus::Shutdown => {
-                                info!("VM[{}] Vcpu[{}] shutdown", vm.id(), vcpu.id());
-                                wait_for_boot(vm_id, || vm.running());
+                        // match vcpu.run() {
+                        Ok(exit_reason) => match exit_reason {
+                            AxVCpuExitReason::Hypercall { nr, args } => {
+                                debug!("Hypercall [{}] args {:x?}", nr, args);
                             }
-                            VCpuStatus::Exit => {
-                                info!("VM[{}] Vcpu[{}] exit", vm.id(), vcpu.id());
-                                axtask::exit(0)
+                            AxVCpuExitReason::FailEntry {
+                                hardware_entry_failure_reason,
+                            } => {
+                                warn!(
+                                    "VM[{}] VCpu[{}] run failed with exit code {}",
+                                    vm_id, vcpu_id, hardware_entry_failure_reason
+                                );
+                            }
+                            AxVCpuExitReason::ExternalInterrupt { vector } => {
+                                debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                            }
+                            AxVCpuExitReason::Halt => {
+                                debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
+                                wait(vm_id)
+                            }
+                            _ => {
+                                warn!("Unhandled VM-Exit");
                             }
                         },
                         Err(err) => {

@@ -30,7 +30,6 @@ pub use mm::NestedPageFaultInfo;
 pub use vm::AxVCpuRef;
 pub use vm::AxVM;
 pub use vm::AxVMRef;
-pub use vm::VCpuStatus;
 
 pub type AxVMPerCpu<H> = percpu::AxVMPerCpu<arch::AxVMArchPerCpuImpl<H>>;
 

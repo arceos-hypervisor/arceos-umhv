@@ -135,7 +135,7 @@ impl<H: AxVMHal> AxVM<H> {
                 result.inner_const.config.ap_entry()
             };
             vcpu.setup(
-                entry.as_usize(),
+                entry,
                 result.ept_root(),
                 <AxArchVCpuImpl<H> as AxArchVCpu>::SetupConfig::default(),
             )?;
@@ -215,55 +215,43 @@ impl<H: AxVMHal> AxVM<H> {
         unsafe { &mut *self.inner_const.device_list.get() }
     }
 
-    pub fn run_vcpu(&self, vcpu_id: usize) -> AxResult<VCpuStatus> {
+    pub fn run_vcpu(&self, vcpu_id: usize) -> AxResult<AxVCpuExitReason> {
         let vcpu = self
             .vcpu(vcpu_id)
             .ok_or_else(|| ax_err_type!(InvalidInput, "Invalid vcpu_id"))?;
+
         vcpu.bind()?;
 
-        let mut vcpu_status = VCpuStatus::Running;
-
-        loop {
+        let exit_reason = loop {
             let exit_reason = vcpu.run()?;
 
             trace!("{exit_reason:#x?}");
-            match exit_reason {
-                AxVCpuExitReason::Hypercall { nr, args } => {
-                    debug!("Hypercall [{}] args {:x?}", nr, args);
-                }
-                AxVCpuExitReason::Nothing => {}
-                AxVCpuExitReason::Halt => {
-                    vcpu_status = VCpuStatus::Yield;
-                }
-                AxVCpuExitReason::FailEntry {
-                    hardware_entry_failure_reason: _,
-                } => {
-                    vcpu_status = VCpuStatus::Exit;
-                }
-                _ => {
-                    let device_list = self.get_device_list();
-                    device_list.vmexit_handler(vcpu.get_arch_vcpu(), exit_reason)?;
-                }
+            let handled = match &exit_reason {
+                AxVCpuExitReason::MmioRead { addr: _, width: _ } => true,
+                AxVCpuExitReason::MmioWrite {
+                    addr: _,
+                    width: _,
+                    data: _,
+                } => true,
+                AxVCpuExitReason::IoRead { port: _, width: _ } => true,
+                AxVCpuExitReason::IoWrite {
+                    port: _,
+                    width: _,
+                    data: _,
+                } => true,
+                AxVCpuExitReason::NestedPageFault { addr, access_flags } => self
+                    .inner_mut
+                    .address_space
+                    .lock()
+                    .handle_page_fault(*addr, *access_flags),
+                _ => false,
+            };
+            if !handled {
+                break exit_reason;
             }
-            if vcpu_status != VCpuStatus::Running {
-                break;
-            }
-        }
-        vcpu.unbind()?;
-        Ok(vcpu_status)
-    }
-}
+        };
 
-numeric_enum_macro::numeric_enum! {
-#[repr(u32)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
-/// VCpu status after a VM Exit.
-/// Todo
-pub enum VCpuStatus {
-    Running = 0,
-    Yield = 1,
-    Shutdown = 2,
-    Exit = 3,
-}
+        vcpu.unbind()?;
+        Ok(exit_reason)
+    }
 }

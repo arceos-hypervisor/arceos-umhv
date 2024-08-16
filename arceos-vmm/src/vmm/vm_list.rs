@@ -5,17 +5,28 @@ use spin::Mutex;
 
 use crate::vmm::VMRef;
 
+/// Represents a list of VMs,
+/// stored in a BTreeMap where the key is the VM ID and the value is a reference to the VM.
 struct VMList {
     vm_list: BTreeMap<usize, VMRef>,
 }
 
 impl VMList {
+    /// Creates a new, empty `VMList`.
     const fn new() -> VMList {
         VMList {
             vm_list: BTreeMap::new(),
         }
     }
 
+    /// Adds a new VM to the list.
+    ///
+    /// If a VM with the given ID already exists, a warning is logged, and the VM is not added.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm_id` - The unique identifier for the VM.
+    /// * `vm` - A reference to the VM that will be added.
     fn push_vm(&mut self, vm_id: usize, vm: VMRef) {
         if self.vm_list.contains_key(&vm_id) {
             warn!(
@@ -27,11 +38,29 @@ impl VMList {
         self.vm_list.insert(vm_id, vm);
     }
 
+    /// Removes a VM from the list by its ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm_id` - The unique identifier of the VM to be removed.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(VMRef)` if the VM was successfully removed, or `None` if the VM with the given ID did not exist.
     #[allow(unused)]
     fn remove_vm(&mut self, vm_id: usize) -> Option<VMRef> {
         self.vm_list.remove(&vm_id)
     }
 
+    /// Retrieves a VM from the list by its ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm_id` - The unique identifier of the VM to be retrieved.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(VMRef)` if the VM exists, or `None` if the VM with the given ID does not exist.
     fn get_vm_by_id(&self, vm_id: usize) -> Option<VMRef> {
         self.vm_list.get(&vm_id).cloned()
     }

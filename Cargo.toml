@@ -13,6 +13,9 @@ axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "5c9ee7
 axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "5c9ee79" }
 axtask = { git = "https://github.com/arceos-org/arceos.git", branch = "monolithic" }
 
+axvm = { path = "./crates/axvm" }
+axvcpu = { path = "../arceos-crates/axvcpu" }
+
 # Since we need to rely on the `axtask` module from the `monolithic` branch of arceos-org/arceos repository, which supports TaskExt,
 # and this module depends on different versions of `axhal` and `axconfig`, 
 # (ref: https://github.com/arceos-org/arceos/blob/monolithic/modules/axtask/Cargo.toml)

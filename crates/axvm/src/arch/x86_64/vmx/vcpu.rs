@@ -1079,8 +1079,8 @@ impl<H: AxVMHal> AxArchVCpu for VmxVcpu<H> {
         Self::new()
     }
 
-    fn set_entry(&mut self, entry: usize) -> AxResult {
-        self.entry = Some(GuestPhysAddr::from(entry));
+    fn set_entry(&mut self, entry: GuestPhysAddr) -> AxResult {
+        self.entry = Some(entry);
         Ok(())
     }
 

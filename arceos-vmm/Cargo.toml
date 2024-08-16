@@ -26,7 +26,8 @@ axstd = { workspace = true, features = [
 ] }
 
 # System independent crates used for constructing hypervisor.
-axvm = { path = "../crates/axvm" }
+axvm = { workspace = true }
+axvcpu = { workspace = true }
 
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
 axerrno = "0.1.0"
