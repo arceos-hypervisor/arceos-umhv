@@ -45,6 +45,7 @@ pub fn check_events() {
         let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw()};
         let event = timer_list.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
+            // info!("pick one to handler!!!");
             event.callback(now);
         } else {
             break;
@@ -56,6 +57,7 @@ const PERIODIC_INTERVAL_NANOS: u64 =
     axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
 
 pub fn scheduler_next_event() {
+    // info!("set deadline!!!");
     let now_ns = axhal::time::monotonic_time_nanos();
     let deadline = now_ns + PERIODIC_INTERVAL_NANOS;
     axhal::time::set_oneshot_timer(deadline);

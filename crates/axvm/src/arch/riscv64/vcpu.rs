@@ -12,6 +12,7 @@ use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::AxVMHal;
 use axaddrspace::HostPhysAddr;
 use axvcpu::AxArchVCpuExitReason;
+use riscv::register::sie;
 
 use super::csrs::defs::hstatus;
 use super::regs::{GeneralPurposeRegisters, GprIndex};
@@ -279,6 +280,14 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
     fn run(&mut self) -> AxResult<AxArchVCpuExitReason> {
         let regs = &mut self.regs;
         unsafe {
+            sstatus::clear_sie();
+            sie::set_sext();
+            sie::set_ssoft();
+            sie::set_stimer();
+        }
+
+        debug!("before run");
+        unsafe {
             // Safe to run the guest as it only touches memory assigned to it by being owned
             // by its page table
             _run_guest(regs);
@@ -327,6 +336,15 @@ impl<H: AxVMHal> VCpu<H> {
         self.regs.trap_csrs.htinst = htinst::read();
 
         let scause = scause::read();
+        // info!("vcpu info: {:#?}", scause.cause());
+
+        unsafe {
+            sie::clear_sext();
+            sie::clear_ssoft();
+            sie::clear_stimer();
+            sstatus::set_sie();
+        }
+
         use scause::{Exception, Interrupt, Trap};
         match scause.cause() {
             Trap::Exception(Exception::VirtualSupervisorEnvCall) => {
@@ -344,7 +362,8 @@ impl<H: AxVMHal> VCpu<H> {
                             sbi_rt::legacy::console_putchar(c);
                         }
                         SbiMessage::SetTimer(timer) => {
-                            sbi_rt::set_timer(timer as u64);
+                            // info!("set_timer:{}",timer);
+                            // sbi_rt::set_timer(timer as u64);
                             // Clear guest timer interrupt
                             CSR.hvip
                                 .read_and_clear_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
@@ -374,14 +393,18 @@ impl<H: AxVMHal> VCpu<H> {
                 }
             }
             Trap::Interrupt(Interrupt::SupervisorTimer) => {
-                // debug!("timer irq emulation");
+                // info!("timer irq emulation");
                 // Enable guest timer interrupt
                 // CSR.hvip
                 //     .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
                 // // Clear host timer interrupt
                 // CSR.sie
                 //     .read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
+                // cannot use handler_irq directly, because it is private in arceos.
+                
                 sbi_rt::set_timer(0);
+                CSR.sie
+                    .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
                 Ok(AxArchVCpuExitReason::Nothing)
             }
             Trap::Interrupt(Interrupt::SupervisorExternal) => {

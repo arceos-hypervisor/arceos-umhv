@@ -21,6 +21,7 @@ pub use self::PerCpu as AxVMArchPerCpuImpl;
 use crate::percpu::AxVMArchPerCpu;
 use axerrno::AxError;
 use axerrno::AxResult;
+use riscv::register::sie;
 
 use crate::AxVMHal;
 
@@ -33,10 +34,12 @@ impl<H: AxVMHal> AxVMArchPerCpu for PerCpu<H> {
         unsafe {
             setup_csrs();
         }
-
-        #[cfg(feature = "irq")]
+        
+        // #[cfg(feature = "irq")]
         if cpu_id == 0 {
-            axhal::irq::register_handler(TIMER_IRQ_NUM, || {
+            info!("register_handler");
+            axhal::irq::register_handler(axhal::time::TIMER_IRQ_NUM, || {
+                // info!("TIMER_IRQ_NUM handler!!!");
                 unsafe {
                     sie::clear_stimer();
                 }
