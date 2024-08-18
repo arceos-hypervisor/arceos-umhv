@@ -13,7 +13,6 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 cfg-if = "1.0"
 
 # System dependent modules provided by ArceOS.
-axalloc = { workspace = true }
 axhal = { workspace = true, features = ["paging"] }
 axtask = { workspace = true, features = ["multitask"] }
 axstd = { workspace = true, features = [
@@ -25,7 +24,7 @@ axstd = { workspace = true, features = [
     "multitask",
 ] }
 
-# System independent crates used for constructing hypervisor.
+# System dependent modules provided by ArceOS-Hypervisor.
 axvm = { workspace = true }
 axvcpu = { workspace = true }
 
