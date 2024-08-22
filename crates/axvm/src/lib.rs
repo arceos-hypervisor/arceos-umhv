@@ -9,9 +9,6 @@
 //!
 //! This crate contains:
 //! - [`AxVM`]: The main structure representing a VM.
-//!   - It currently handles only virtual CPUs
-//!   - Memory mapping and device emulation are not implemented yet
-//! - Implementations for [`axvcpu::AxArchVCpu`]: The architecture-dependent part of a virtual CPU.
 
 extern crate alloc;
 #[macro_use]
@@ -21,7 +18,6 @@ mod hal;
 mod vcpu;
 mod vm;
 
-// pub mod arch;
 pub mod config;
 
 pub use hal::AxVMHal;
@@ -31,6 +27,7 @@ pub use vm::AxVMRef;
 
 pub type AxVMPerCpu = axvcpu::AxPerCpu<vcpu::AxVMArchPerCpuImpl>;
 
+#[cfg(target_arch = "x86_64")]
 pub use vcpu::PhysFrameIf;
 
 /// Whether the hardware has virtualization support.

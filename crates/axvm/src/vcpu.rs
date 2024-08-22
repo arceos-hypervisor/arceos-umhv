@@ -8,8 +8,9 @@ cfg_if::cfg_if! {
 
         pub use x86_vcpu::PhysFrameIf;
     } else if #[cfg(target_arch = "riscv64")] {
-        mod riscv64;
-        pub use self::riscv64::*;
+        pub use riscv_vcpu::RISCVVCpu as AxArchVCpuImpl;
+        pub use riscv_vcpu::RISCVPerCpu as AxVMArchPerCpuImpl;
+        pub use riscv_vcpu::has_hardware_support;
     } else if #[cfg(target_arch = "aarch64")] {
         pub use arm_vcpu::Aarch64VCpu as AxArchVCpuImpl;
         pub use arm_vcpu::Aarch64PerCpu as AxVMArchPerCpuImpl;
