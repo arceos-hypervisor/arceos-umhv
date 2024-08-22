@@ -18,22 +18,22 @@ extern crate alloc;
 extern crate log;
 
 mod hal;
-mod mm;
-mod percpu;
+mod vcpu;
 mod vm;
 
-pub mod arch;
+// pub mod arch;
 pub mod config;
 
 pub use hal::AxVMHal;
-pub use mm::NestedPageFaultInfo;
 pub use vm::AxVCpuRef;
 pub use vm::AxVM;
 pub use vm::AxVMRef;
 
-pub type AxVMPerCpu<H> = percpu::AxVMPerCpu<arch::AxVMArchPerCpuImpl<H>>;
+pub type AxVMPerCpu = axvcpu::AxPerCpu<vcpu::AxVMArchPerCpuImpl>;
+
+pub use vcpu::PhysFrameIf;
 
 /// Whether the hardware has virtualization support.
 pub fn has_hardware_support() -> bool {
-    arch::has_hardware_support()
+    vcpu::has_hardware_support()
 }

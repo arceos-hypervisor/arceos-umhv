@@ -32,6 +32,7 @@ axvcpu = { workspace = true }
 axerrno = "0.1.0"
 memory_addr = "0.2.0"
 page_table_entry = { version = "0.3.3", features = ["arm-el2"] }
+page_table_multiarch = "0.3.3"
 percpu = { version = "0.1.4", features = ["arm-el2"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
@@ -39,6 +40,7 @@ percpu = { version = "0.1.4", features = ["arm-el2"] }
 x86 = "0.52"
 x86_64 = "0.14"
 raw-cpuid = "11.0"
+crate_interface = "0.1"
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 fdt = { version = "0.1.5" }

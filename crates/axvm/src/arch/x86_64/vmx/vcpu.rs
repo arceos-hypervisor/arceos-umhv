@@ -87,6 +87,7 @@ impl<H: AxVMHal> VmxVcpu<H> {
     pub fn new() -> AxResult<Self> {
         let vmcs_revision_id = super::read_vmcs_revision_id();
         XState::enable_xsave();
+
         let vcpu = Self {
             guest_regs: GeneralRegisters::default(),
             host_stack_top: 0,
@@ -100,10 +101,7 @@ impl<H: AxVMHal> VmxVcpu<H> {
             ept_root: None,
             // is_host: false,
         };
-        // Todo: remove these functions.
-        // vcpu.setup_io_bitmap()?;
-        // vcpu.setup_msr_bitmap()?;
-        // vcpu.setup_vmcs(entry, ept_root)?;
+
         info!("[HV] created VmxVcpu(vmcs: {:#x})", vcpu.vmcs.phys_addr());
         Ok(vcpu)
     }

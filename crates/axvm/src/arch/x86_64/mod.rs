@@ -1,4 +1,5 @@
 mod lapic;
+pub(crate) mod frame;
 pub(crate) mod msr;
 
 #[macro_use]

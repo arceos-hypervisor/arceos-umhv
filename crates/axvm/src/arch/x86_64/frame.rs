@@ -1,29 +1,14 @@
-//! Address Space management for AxVM.
-//! Todo: reuse code from arceos under monolithickernel-new branch
-//! 	* module: https://github.com/arceos-org/arceos/tree/monolithickernel-new/modules/axmm
-//! 	* crate: https://github.com/arceos-org/arceos/tree/monolithickernel-new/crates/memory_set
-
 use core::marker::PhantomData;
 
 use axerrno::{ax_err_type, AxResult};
 use memory_addr::PhysAddr;
-use page_table_entry::MappingFlags;
 use page_table_multiarch::PagingHandler;
 
-use axaddrspace::{GuestPhysAddr, HostPhysAddr};
+use axaddrspace::HostPhysAddr;
 
 use crate::AxVMHal;
 
 pub(crate) use memory_addr::PAGE_SIZE_4K as PAGE_SIZE;
-
-/// Information about nested page faults.
-#[derive(Debug)]
-pub struct NestedPageFaultInfo {
-    /// Access type that caused the nested page fault.
-    pub access_flags: MappingFlags,
-    /// Guest physical address that caused the nested page fault.
-    pub fault_guest_paddr: GuestPhysAddr,
-}
 
 /// A 4K-sized contiguous physical memory page, it will deallocate the page
 /// automatically on drop.

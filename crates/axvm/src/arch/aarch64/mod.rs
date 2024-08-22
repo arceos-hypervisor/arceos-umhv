@@ -14,7 +14,7 @@ use axhal::arch::register_lower_aarch64_synchronous_handler;
 
 pub use self::device_list::AxArchDeviceList;
 pub use self::pcpu::PerCpu as AxVMArchPerCpuImpl;
-pub use self::vcpu::VCpu as AxArchVCpuImpl;
+pub use self::vcpu::Aarch64VCpu as AxArchVCpuImpl;
 pub use vcpu::AxArchVCpuConfig;
 
 /// context frame for aarch64
