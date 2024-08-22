@@ -1,5 +1,5 @@
-use super::super::csrs::{traps, RiscvCsrTrait, CSR};
-
+use super::super::csrs::{RiscvCsrTrait, CSR};
+use super::super::consts::traps;
 pub const MAX_CPUS: usize = 8;
 /// Number of contexts for the PLIC. Value is twice the max number of harts because each hart will
 /// have one M-mode context and one S-mode context.

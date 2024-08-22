@@ -4,10 +4,10 @@ use core::marker::PhantomData;
 use core::mem::size_of;
 use memoffset::offset_of;
 use tock_registers::LocalRegisterCopy;
-// use alloc::sync::Arc;
 use riscv::register::{htinst, htval, scause, sstatus, stval};
 
-use super::csrs::{traps, RiscvCsrTrait, CSR};
+use super::csrs::{RiscvCsrTrait, CSR};
+use super::consts::traps;
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::AxVMHal;
 use axaddrspace::HostPhysAddr;
@@ -202,25 +202,11 @@ extern "C" {
     fn _run_guest(state: *mut VmCpuRegisters);
 }
 
-pub enum VmCpuStatus {
-    /// The vCPU is not powered on.
-    PoweredOff,
-    /// The vCPU is available to be run.
-    Runnable,
-    /// The vCPU has benn claimed exclusively for running on a (physical) CPU.
-    Running,
-}
-
-/// The architecture dependent configuration of a `AxArchVCpu`.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct VCpuConfig {}
 
 #[derive(Default)]
 /// A virtual CPU within a guest
 pub struct VCpu<H: AxVMHal> {
     regs: VmCpuRegisters,
-    // gpt: G,
-    // pub guest: Arc<Guest>,
     marker: PhantomData<H>,
 }
 
@@ -292,6 +278,12 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
             // by its page table
             _run_guest(regs);
         }
+        unsafe {
+            sie::clear_sext();
+            sie::clear_ssoft();
+            sie::clear_stimer();
+            sstatus::set_sie();
+        }
         self.vmexit_handler()
     }
 
@@ -336,14 +328,6 @@ impl<H: AxVMHal> VCpu<H> {
         self.regs.trap_csrs.htinst = htinst::read();
 
         let scause = scause::read();
-        // info!("vcpu info: {:#?}", scause.cause());
-
-        unsafe {
-            sie::clear_sext();
-            sie::clear_ssoft();
-            sie::clear_stimer();
-            sstatus::set_sie();
-        }
 
         use scause::{Exception, Interrupt, Trap};
         match scause.cause() {
@@ -363,14 +347,10 @@ impl<H: AxVMHal> VCpu<H> {
                         }
                         SbiMessage::SetTimer(timer) => {
                             // info!("set_timer:{}",timer);
-                            // sbi_rt::set_timer(timer as u64);
                             // Clear guest timer interrupt
                             CSR.hvip
                                 .read_and_clear_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
-                            // //  Enable host timer interrupt
-                            // CSR.sie
-                            //     .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
-                            register_timer(timer, TimerEventFn::new(|now| {
+                            register_timer(timer * 100, TimerEventFn::new(|now| {
                                 CSR.hvip
                                     .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
                             }));
@@ -394,14 +374,7 @@ impl<H: AxVMHal> VCpu<H> {
             }
             Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 // info!("timer irq emulation");
-                // Enable guest timer interrupt
-                // CSR.hvip
-                //     .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
-                // // Clear host timer interrupt
-                // CSR.sie
-                //     .read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
                 // cannot use handler_irq directly, because it is private in arceos.
-                
                 sbi_rt::set_timer(0);
                 CSR.sie
                     .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);

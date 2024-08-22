@@ -6,6 +6,10 @@ use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
+const TICKS_PER_SEC: u64 = 100;
+const NANOS_PER_SEC: u64 = 1_000_000_000;
+const PERIODIC_INTERVAL_NANOS: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
+
 // TODO:complete TimerEventFn: including guest owmer, ... 
 pub struct TimerEventFn(Box<dyn FnOnce(TimeValue) + Send + 'static>);
 
@@ -34,11 +38,6 @@ pub fn register_timer(deadline: usize, handler: TimerEventFn) {
     timers.set(TimeValue::from_nanos(deadline as u64), handler);
 }
 
-// pub fn unregister_timer() {
-//     let mut timers = TIMER_LIST.lock();
-//     timers.cancel(|t| Arc::ptr_eq(&t.0, task));
-// }
-
 pub fn check_events() {
     loop {
         let now = wall_time();
@@ -52,9 +51,6 @@ pub fn check_events() {
         }
     }
 }
-
-const PERIODIC_INTERVAL_NANOS: u64 =
-    axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
 
 pub fn scheduler_next_event() {
     // info!("set deadline!!!");

@@ -1,8 +1,10 @@
-use super::csrs::RiscvCsrTrait;
+use super::csrs::{RiscvCsrTrait, CSR};
+use super::consts::traps;
 use super::regs::GprIndex;
 use super::vcpu::VCpu;
-use super::vmexit::PrivilegeLevel;
-use super::{devices::plic::PlicState, traps, vm_pages::fetch_guest_instruction, CSR};
+use tock_registers::LocalRegisterCopy;
+use super::csrs::defs::hstatus;
+use super::{devices::plic::PlicState, vm_pages::fetch_guest_instruction};
 use crate::AxVMHal;
 use axaddrspace::{GuestPhysAddr, GuestVirtAddr};
 use axerrno::{AxError, AxResult};
@@ -34,9 +36,11 @@ impl<H: AxVMHal> DeviceList<H> {
             AxArchVCpuExitReason::NestedPageFault { addr: fault_addr } => {
                 let falut_pc = vcpu.regs().guest_regs.sepc;
                 let inst = vcpu.regs().trap_csrs.htinst as u32;
-                let priv_level = PrivilegeLevel::from_hstatus(vcpu.regs().guest_regs.hstatus);
-                match priv_level {
-                    PrivilegeLevel::Supervisor => {
+                
+                let val = LocalRegisterCopy::<usize, hstatus::Register>::new(vcpu.regs().guest_regs.hstatus);
+                
+                match val.read(hstatus::spvp) {
+                    1 => {
                         match self.handle_page_fault(
                             GuestVirtAddr::from(falut_pc),
                             inst,
@@ -54,9 +58,10 @@ impl<H: AxVMHal> DeviceList<H> {
                             }
                         }
                     }
-                    PrivilegeLevel::User => {
+                    0 => {
                         panic!("User page fault")
                     }
+                    _ => unreachable!(), // Field is only 1-bit wide.
                 }
             }
             AxArchVCpuExitReason::ExternalInterrupt { .. } => self.handle_irq(),

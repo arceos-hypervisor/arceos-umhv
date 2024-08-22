@@ -407,7 +407,6 @@ version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
  "axaddrspace",
- "axconfig",
  "axerrno",
  "axhal",
  "axvcpu",
