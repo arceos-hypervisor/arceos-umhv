@@ -3,103 +3,16 @@ use core::arch::global_asm;
 use core::marker::PhantomData;
 use core::mem::size_of;
 use memoffset::offset_of;
-use tock_registers::LocalRegisterCopy;
-use riscv::register::{htinst, htval, scause, sstatus, stval};
+use riscv::register::{hstatus, htinst, htval, hvip, scause, sie, sstatus, stval};
 
-use super::csrs::{RiscvCsrTrait, CSR};
-use super::consts::traps;
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::AxVMHal;
 use axaddrspace::HostPhysAddr;
 use axvcpu::AxArchVCpuExitReason;
-use riscv::register::sie;
 
-use super::csrs::defs::hstatus;
-use super::regs::{GeneralPurposeRegisters, GprIndex};
+use super::regs::*;
 use super::timers::{register_timer, TimerEventFn};
 use sbi_rt::{pmu_counter_get_info, pmu_counter_stop};
-
-/// Hypervisor GPR and CSR state which must be saved/restored when entering/exiting virtualization.
-#[derive(Default)]
-#[repr(C)]
-struct HypervisorCpuState {
-    gprs: GeneralPurposeRegisters,
-    sstatus: usize,
-    hstatus: usize,
-    scounteren: usize,
-    stvec: usize,
-    sscratch: usize,
-}
-
-/// Guest GPR and CSR state which must be saved/restored when exiting/entering virtualization.
-#[derive(Default)]
-#[repr(C)]
-pub struct GuestCpuState {
-    pub gprs: GeneralPurposeRegisters,
-    pub sstatus: usize,
-    pub hstatus: usize,
-    pub scounteren: usize,
-    pub sepc: usize,
-}
-
-/// The CSRs that are only in effect when virtualization is enabled (V=1) and must be saved and
-/// restored whenever we switch between VMs.
-#[derive(Default)]
-#[repr(C)]
-pub struct GuestVsCsrs {
-    htimedelta: usize,
-    vsstatus: usize,
-    vsie: usize,
-    vstvec: usize,
-    vsscratch: usize,
-    vsepc: usize,
-    vscause: usize,
-    vstval: usize,
-    vsatp: usize,
-    vstimecmp: usize,
-}
-
-/// Virtualized HS-level CSRs that are used to emulate (part of) the hypervisor extension for the
-/// guest.
-#[derive(Default)]
-#[repr(C)]
-pub struct GuestVirtualHsCsrs {
-    hie: usize,
-    hgeie: usize,
-    hgatp: usize,
-}
-
-/// CSRs written on an exit from virtualization that are used by the hypervisor to determine the cause
-/// of the trap.
-#[derive(Default, Clone)]
-#[repr(C)]
-pub struct VmCpuTrapState {
-    pub scause: usize,
-    pub stval: usize,
-    pub htval: usize,
-    pub htinst: usize,
-}
-
-/// (v)CPU register state that must be saved or restored when entering/exiting a VM or switching
-/// between VMs.
-#[derive(Default)]
-#[repr(C)]
-pub struct VmCpuRegisters {
-    // CPU state that's shared between our's and the guest's execution environment. Saved/restored
-    // when entering/exiting a VM.
-    hyp_regs: HypervisorCpuState,
-    pub guest_regs: GuestCpuState,
-
-    // CPU state that only applies when V=1, e.g. the VS-level CSRs. Saved/restored on activation of
-    // the vCPU.
-    vs_csrs: GuestVsCsrs,
-
-    // Virtualized HS-level CPU state.
-    virtual_hs_csrs: GuestVirtualHsCsrs,
-
-    // Read on VM exit.
-    pub trap_csrs: VmCpuTrapState,
-}
 
 #[allow(dead_code)]
 const fn hyp_gpr_offset(index: GprIndex) -> usize {
@@ -202,7 +115,6 @@ extern "C" {
     fn _run_guest(state: *mut VmCpuRegisters);
 }
 
-
 #[derive(Default)]
 /// A virtual CPU within a guest
 pub struct VCpu<H: AxVMHal> {
@@ -218,14 +130,14 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
     fn new(_config: Self::CreateConfig) -> AxResult<Self> {
         let mut regs = VmCpuRegisters::default();
         // Set hstatus
-        let mut hstatus = LocalRegisterCopy::<usize, hstatus::Register>::new(
-            riscv::register::hstatus::read().bits(),
-        );
-        hstatus.modify(hstatus::spv::Supervisor);
+        let mut hstatus = hstatus::read();
+        hstatus.set_spv(true);
         // Set SPVP bit in order to accessing VS-mode memory from HS-mode.
-        hstatus.modify(hstatus::spvp::Supervisor);
-        CSR.hstatus.write_value(hstatus.get());
-        regs.guest_regs.hstatus = hstatus.get();
+        hstatus.set_spvp(true);
+        unsafe {
+            hstatus.write();
+        }
+        regs.guest_regs.hstatus = hstatus.bits();
 
         // Set sstatus
         let mut sstatus = sstatus::read();
@@ -233,6 +145,7 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
         regs.guest_regs.sstatus = sstatus.bits();
 
         regs.guest_regs.gprs.set_reg(GprIndex::A0, 0);
+        // TODO:from _config
         regs.guest_regs.gprs.set_reg(GprIndex::A1, 0x9000_0000);
 
         Ok(Self {
@@ -348,12 +261,16 @@ impl<H: AxVMHal> VCpu<H> {
                         SbiMessage::SetTimer(timer) => {
                             // info!("set_timer:{}",timer);
                             // Clear guest timer interrupt
-                            CSR.hvip
-                                .read_and_clear_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
-                            register_timer(timer * 100, TimerEventFn::new(|now| {
-                                CSR.hvip
-                                    .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_TIMER);
-                            }));
+                            unsafe {
+                                hvip::clear_vstip();
+                            }
+
+                            register_timer(
+                                timer * 100,
+                                TimerEventFn::new(|_now| unsafe {
+                                    hvip::set_vstip();
+                                }),
+                            );
                         }
                         SbiMessage::Reset(_) => {
                             sbi_rt::system_reset(sbi_rt::Shutdown, sbi_rt::SystemFailure);
@@ -376,8 +293,9 @@ impl<H: AxVMHal> VCpu<H> {
                 // info!("timer irq emulation");
                 // cannot use handler_irq directly, because it is private in arceos.
                 sbi_rt::set_timer(0);
-                CSR.sie
-                    .read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
+                unsafe {
+                    sie::set_stimer();
+                }
                 Ok(AxArchVCpuExitReason::Nothing)
             }
             Trap::Interrupt(Interrupt::SupervisorExternal) => {
@@ -495,20 +413,3 @@ impl<H: AxVMHal> VCpu<H> {
     }
 }
 
-// Private methods implements
-impl<H: AxVMHal> VCpu<H> {
-    /// Delivers the given exception to the vCPU, setting its register state
-    /// to handle the trap the next time it is run.
-    fn inject_exception(&mut self) {
-        unsafe {
-            core::arch::asm!(
-                "csrw vsepc, {hyp_sepc}",
-                "csrw vscause, {hyp_scause}",
-                "csrr {guest_sepc}, vstvec",
-                hyp_sepc = in(reg) self.regs.guest_regs.sepc,
-                hyp_scause = in(reg) self.regs.trap_csrs.scause,
-                guest_sepc = out(reg) self.regs.guest_regs.sepc,
-            );
-        }
-    }
-}

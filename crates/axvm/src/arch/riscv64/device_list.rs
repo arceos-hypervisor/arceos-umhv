@@ -1,15 +1,12 @@
-use super::csrs::{RiscvCsrTrait, CSR};
-use super::consts::traps;
 use super::regs::GprIndex;
 use super::vcpu::VCpu;
-use tock_registers::LocalRegisterCopy;
-use super::csrs::defs::hstatus;
 use super::{devices::plic::PlicState, vm_pages::fetch_guest_instruction};
 use crate::AxVMHal;
 use axaddrspace::{GuestPhysAddr, GuestVirtAddr};
 use axerrno::{AxError, AxResult};
 use axvcpu::AxArchVCpuExitReason;
 use core::panic;
+use riscv::register::{hstatus, hvip};
 use riscv_decode::Instruction;
 
 /// the devices that belongs to a vm
@@ -37,10 +34,9 @@ impl<H: AxVMHal> DeviceList<H> {
                 let falut_pc = vcpu.regs().guest_regs.sepc;
                 let inst = vcpu.regs().trap_csrs.htinst as u32;
                 
-                let val = LocalRegisterCopy::<usize, hstatus::Register>::new(vcpu.regs().guest_regs.hstatus);
-                
-                match val.read(hstatus::spvp) {
-                    1 => {
+                let val = hstatus::read();
+                match val.spvp() {
+                    true => {
                         match self.handle_page_fault(
                             GuestVirtAddr::from(falut_pc),
                             inst,
@@ -58,10 +54,9 @@ impl<H: AxVMHal> DeviceList<H> {
                             }
                         }
                     }
-                    0 => {
+                    _ => {
                         panic!("User page fault")
                     }
-                    _ => unreachable!(), // Field is only 1-bit wide.
                 }
             }
             AxArchVCpuExitReason::ExternalInterrupt { .. } => self.handle_irq(),
@@ -133,8 +128,8 @@ impl<H: AxVMHal> DeviceList<H> {
         let irq = unsafe { core::ptr::read_volatile(claim_and_complete_addr as *const u32) };
         assert!(irq != 0);
         self.plic.claim_complete[context_id] = irq;
-
-        CSR.hvip
-            .read_and_set_bits(traps::interrupt::VIRTUAL_SUPERVISOR_EXTERNAL);
+        unsafe {
+            hvip::set_vseip();
+        }
     }
 }

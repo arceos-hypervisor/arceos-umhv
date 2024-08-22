@@ -37,4 +37,3 @@ pub mod traps {
         pub const STORE_GUEST_PAGE_FAULT: usize = 1 << 23;
     }
 }
-

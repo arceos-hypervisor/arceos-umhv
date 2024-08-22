@@ -1,5 +1,4 @@
-use super::super::csrs::{RiscvCsrTrait, CSR};
-use super::super::consts::traps;
+use riscv::register::hvip;
 pub const MAX_CPUS: usize = 8;
 /// Number of contexts for the PLIC. Value is twice the max number of harts because each hart will
 /// have one M-mode context and one S-mode context.
@@ -65,8 +64,9 @@ impl PlicState {
                 }
                 self.claim_complete[hart] = 0;
                 // Send Interrupt to the hart
-                CSR.hvip
-                    .read_and_clear_bits(traps::interrupt::VIRTUAL_SUPERVISOR_EXTERNAL);
+                unsafe {
+                    hvip::clear_vseip();
+                }
             }
         } else {
             todo!()

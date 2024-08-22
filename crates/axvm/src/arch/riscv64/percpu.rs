@@ -2,12 +2,11 @@ use crate::percpu::AxVMArchPerCpu;
 use axerrno::AxError;
 use axerrno::AxResult;
 
-use crate::AxVMHal;
-use super::csrs::{RiscvCsrTrait, CSR};
 use super::consts::traps;
 use super::detect::detect_h_extension;
 use super::timers;
-
+use crate::AxVMHal;
+use riscv::register::{hedeleg, hideleg, hvip, sie};
 
 pub struct PerCpu<H: AxVMHal> {
     _marker: core::marker::PhantomData<H>,
@@ -18,17 +17,22 @@ impl<H: AxVMHal> AxVMArchPerCpu for PerCpu<H> {
         unsafe {
             setup_csrs();
         }
-        
+
         // #[cfg(feature = "irq")]
         if cpu_id == 0 {
             info!("register_handler");
             //TODO: dont use axhal
             axhal::irq::register_handler(axhal::time::TIMER_IRQ_NUM, || {
                 // info!("TIMER_IRQ_NUM handler!!!");
-                CSR.sie.read_and_clear_bits(traps::interrupt::SUPERVISOR_TIMER);
+                unsafe {
+                    sie::clear_stimer();
+                }
+
                 timers::check_events();
                 timers::scheduler_next_event();
-                CSR.sie.read_and_set_bits(traps::interrupt::SUPERVISOR_TIMER);
+                unsafe {
+                    sie::set_stimer();
+                }
             });
         }
 
@@ -59,7 +63,7 @@ impl<H: AxVMHal> AxVMArchPerCpu for PerCpu<H> {
 /// Initialize (H)S-level CSRs to a reasonable state.
 unsafe fn setup_csrs() {
     // Delegate some synchronous exceptions.
-    CSR.hedeleg.write_value(
+    hedeleg::Hedeleg::from_bits(
         traps::exception::INST_ADDR_MISALIGN
             | traps::exception::BREAKPOINT
             | traps::exception::ENV_CALL_FROM_U_OR_VU
@@ -67,30 +71,29 @@ unsafe fn setup_csrs() {
             | traps::exception::LOAD_PAGE_FAULT
             | traps::exception::STORE_PAGE_FAULT
             | traps::exception::ILLEGAL_INST,
-    );
+    )
+    .write();
 
     // Delegate all interupts.
-    CSR.hideleg.write_value(
+    hideleg::Hideleg::from_bits(
         traps::interrupt::VIRTUAL_SUPERVISOR_TIMER
             | traps::interrupt::VIRTUAL_SUPERVISOR_EXTERNAL
             | traps::interrupt::VIRTUAL_SUPERVISOR_SOFT,
-    );
+    )
+    .write();
 
     // Clear all interrupts.
-    CSR.hvip.read_and_clear_bits(
-        traps::interrupt::VIRTUAL_SUPERVISOR_TIMER
-            | traps::interrupt::VIRTUAL_SUPERVISOR_EXTERNAL
-            | traps::interrupt::VIRTUAL_SUPERVISOR_SOFT,
-    );
+    hvip::clear_vssip();
+    hvip::clear_vstip();
+    hvip::clear_vseip();
 
     // clear all interrupts.
-    CSR.hcounteren.write_value(0xffff_ffff);
+    // the csr num of hcounteren is 0x606, the riscv repo is error!!!
+    // hcounteren::Hcounteren::from_bits(0xffff_ffff).write();
+    core::arch::asm!("csrw {csr}, {rs}", csr = const 0x606, rs = in(reg) -1);
 
     // enable interrupt
-    CSR.sie.write_value(
-        traps::interrupt::SUPERVISOR_EXTERNAL
-            | traps::interrupt::SUPERVISOR_SOFT
-            | traps::interrupt::SUPERVISOR_TIMER,
-    );
-    debug!("sie: {:#x}", CSR.sie.get_value());
+    sie::set_sext();
+    sie::set_ssoft();
+    sie::set_stimer();
 }
