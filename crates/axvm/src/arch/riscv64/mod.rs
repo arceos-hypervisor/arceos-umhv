@@ -1,4 +1,3 @@
-// mod csrs;
 mod consts;
 mod detect;
 mod device_list;

@@ -33,7 +33,7 @@ impl<H: AxVMHal> DeviceList<H> {
             AxArchVCpuExitReason::NestedPageFault { addr: fault_addr } => {
                 let falut_pc = vcpu.regs().guest_regs.sepc;
                 let inst = vcpu.regs().trap_csrs.htinst as u32;
-                
+
                 let val = hstatus::read();
                 match val.spvp() {
                     true => {

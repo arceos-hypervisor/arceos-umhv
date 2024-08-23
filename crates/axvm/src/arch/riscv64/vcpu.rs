@@ -244,51 +244,7 @@ impl<H: AxVMHal> VCpu<H> {
 
         use scause::{Exception, Interrupt, Trap};
         match scause.cause() {
-            Trap::Exception(Exception::VirtualSupervisorEnvCall) => {
-                let sbi_msg = SbiMessage::from_regs(self.regs.guest_regs.gprs.a_regs()).ok();
-                if let Some(sbi_msg) = sbi_msg {
-                    match sbi_msg {
-                        SbiMessage::Base(base) => {
-                            self.handle_base_function(base).unwrap();
-                        }
-                        SbiMessage::GetChar => {
-                            let c = sbi_rt::legacy::console_getchar();
-                            self.set_gpr(GprIndex::A0, c);
-                        }
-                        SbiMessage::PutChar(c) => {
-                            sbi_rt::legacy::console_putchar(c);
-                        }
-                        SbiMessage::SetTimer(timer) => {
-                            // info!("set_timer:{}",timer);
-                            // Clear guest timer interrupt
-                            unsafe {
-                                hvip::clear_vstip();
-                            }
-
-                            register_timer(
-                                timer * 100,
-                                TimerEventFn::new(|_now| unsafe {
-                                    hvip::set_vstip();
-                                }),
-                            );
-                        }
-                        SbiMessage::Reset(_) => {
-                            sbi_rt::system_reset(sbi_rt::Shutdown, sbi_rt::SystemFailure);
-                        }
-                        SbiMessage::RemoteFence(rfnc) => {
-                            self.handle_rfnc_function(rfnc).unwrap();
-                        }
-                        SbiMessage::PMU(pmu) => {
-                            self.handle_pmu_function(pmu).unwrap();
-                        }
-                        _ => todo!(),
-                    }
-                    self.advance_pc(4);
-                    Ok(AxArchVCpuExitReason::Nothing)
-                } else {
-                    panic!()
-                }
-            }
+            Trap::Exception(Exception::VirtualSupervisorEnvCall) => self.handle_sbi_msg(),
             Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 // info!("timer irq emulation");
                 // cannot use handler_irq directly, because it is private in arceos.
@@ -314,6 +270,58 @@ impl<H: AxVMHal> VCpu<H> {
                     self.regs.trap_csrs.stval
                 );
             }
+        }
+    }
+}
+
+impl<H: AxVMHal> VCpu<H> {
+    fn handle_sbi_msg(&mut self) -> AxResult<AxArchVCpuExitReason> {
+        let sbi_msg = SbiMessage::from_regs(self.regs.guest_regs.gprs.a_regs()).ok();
+        if let Some(sbi_msg) = sbi_msg {
+            match sbi_msg {
+                SbiMessage::Base(base) => {
+                    self.handle_base_function(base)?;
+                }
+                SbiMessage::GetChar => {
+                    let c = sbi_rt::legacy::console_getchar();
+                    self.set_gpr(GprIndex::A0, c);
+                }
+                SbiMessage::PutChar(c) => {
+                    sbi_rt::legacy::console_putchar(c);
+                }
+                SbiMessage::SetTimer(timer) => {
+                    // Clear guest timer interrupt
+                    unsafe {
+                        hvip::clear_vstip();
+                    }
+
+                    register_timer(
+                        timer * 100,
+                        TimerEventFn::new(|_now| unsafe {
+                            hvip::set_vstip();
+                        }),
+                    );
+                }
+                SbiMessage::Reset(_) => {
+                    sbi_rt::system_reset(sbi_rt::Shutdown, sbi_rt::SystemFailure);
+                }
+                SbiMessage::RemoteFence(rfnc) => {
+                    self.handle_rfnc_function(rfnc)?;
+                }
+                SbiMessage::PMU(pmu) => {
+                    self.handle_pmu_function(pmu)?;
+                }
+                _ => todo!(),
+            }
+            self.advance_pc(4);
+            Ok(AxArchVCpuExitReason::Nothing)
+        } else {
+            panic!(
+                "Unhandled Trap: {:?}, sepc: {:#x}, stval: {:#x}",
+                scause::read().cause(),
+                self.regs.guest_regs.sepc,
+                self.regs.trap_csrs.stval
+            );
         }
     }
 
@@ -412,4 +420,3 @@ impl<H: AxVMHal> VCpu<H> {
         Ok(())
     }
 }
-
