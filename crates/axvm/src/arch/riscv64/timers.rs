@@ -1,7 +1,6 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
-use axhal::time::wall_time;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
@@ -9,6 +8,8 @@ use timer_list::{TimeValue, TimerEvent, TimerList};
 const TICKS_PER_SEC: u64 = 100;
 const NANOS_PER_SEC: u64 = 1_000_000_000;
 const PERIODIC_INTERVAL_NANOS: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
+const TIMER_FREQUENCY: u64 = 10_000_000;
+const NANOS_PER_TICK: u64 = NANOS_PER_SEC / TIMER_FREQUENCY;
 
 // TODO:complete TimerEventFn: including guest owmer, ...
 pub struct TimerEventFn(Box<dyn FnOnce(TimeValue) + Send + 'static>);
@@ -32,6 +33,7 @@ impl TimerEvent for TimerEventFn {
 #[percpu::def_percpu]
 static TIMER_LIST: LazyInit<SpinNoIrq<TimerList<TimerEventFn>>> = LazyInit::new();
 
+// deadline: ns
 pub fn register_timer(deadline: usize, handler: TimerEventFn) {
     let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
     let mut timers = timer_list.lock();
@@ -40,7 +42,7 @@ pub fn register_timer(deadline: usize, handler: TimerEventFn) {
 
 pub fn check_events() {
     loop {
-        let now = wall_time();
+        let now = TimeValue::from_nanos(riscv::register::time::read() as u64 * NANOS_PER_TICK);
         let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
         let event = timer_list.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
@@ -54,9 +56,9 @@ pub fn check_events() {
 
 pub fn scheduler_next_event() {
     // info!("set deadline!!!");
-    let now_ns = axhal::time::monotonic_time_nanos();
+    let now_ns = riscv::register::time::read() as u64 * NANOS_PER_TICK;
     let deadline = now_ns + PERIODIC_INTERVAL_NANOS;
-    axhal::time::set_oneshot_timer(deadline);
+    sbi_rt::set_timer(deadline / NANOS_PER_TICK as u64);
 }
 
 pub fn init() {

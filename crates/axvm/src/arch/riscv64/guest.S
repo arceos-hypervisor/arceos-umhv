@@ -50,6 +50,7 @@ _run_guest:
     csrrw t1, stvec, t1
     sd    t1, ({hyp_stvec})(a0)
 
+
     /* Save sscratch and replace with pointer to GuestInfo. */
     csrrw t1, sscratch, a0
     sd    t1, ({hyp_sscratch})(a0)

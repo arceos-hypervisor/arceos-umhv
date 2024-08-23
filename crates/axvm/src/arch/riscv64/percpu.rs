@@ -6,7 +6,11 @@ use super::consts::traps;
 use super::detect::detect_h_extension;
 use super::timers;
 use crate::AxVMHal;
-use riscv::register::{hedeleg, hideleg, hvip, sie};
+use riscv::register::{hedeleg, hideleg, hvip, sie, stvec};
+
+// extern "C" {
+//     fn _guest_exit();
+// }
 
 pub struct PerCpu<H: AxVMHal> {
     _marker: core::marker::PhantomData<H>,
@@ -96,4 +100,6 @@ unsafe fn setup_csrs() {
     sie::set_sext();
     sie::set_ssoft();
     sie::set_stimer();
+
+    // stvec::write(_guest_exit as usize, stvec::TrapMode::Direct);
 }
