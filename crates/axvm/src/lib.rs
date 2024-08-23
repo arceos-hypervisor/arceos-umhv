@@ -27,9 +27,6 @@ pub use vm::AxVMRef;
 
 pub type AxVMPerCpu = axvcpu::AxPerCpu<vcpu::AxVMArchPerCpuImpl>;
 
-#[cfg(target_arch = "x86_64")]
-pub use vcpu::PhysFrameIf;
-
 /// Whether the hardware has virtualization support.
 pub fn has_hardware_support() -> bool {
     vcpu::has_hardware_support()

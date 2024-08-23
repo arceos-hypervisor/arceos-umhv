@@ -14,7 +14,7 @@ axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "4f29e0
 axtask = { git = "https://github.com/arceos-org/arceos.git", branch = "monolithic" }
 
 axvm = { path = "./crates/axvm" }
-axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", rev = "2c08c99" }
+axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git" }
 axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git" }
 
 arm_vcpu = { git = "https://github.com/arceos-hypervisor/arm_vcpu.git" }

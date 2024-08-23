@@ -17,27 +17,38 @@ impl AxVMHal for AxVMHalImpl {
     }
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "x86_64")] {
-        use page_table_multiarch::PagingHandler;
+/// This design might seem strange,
+/// but the underlying reason is that the vCPU implementations for ARM and RISC-V architectures
+/// **DO NOT** require dependency on OS-related resource management interfaces.
+///
+/// However, the vCPU implementation for the x86_64 architecture relies on OS-provided physical memory management interfaces to allocate memory for VMX-related control regions.
+/// To avoid unnecessary Rust generic type applications, we decided to introduce `crate_interface` in the [`x86_vcpu`](https://github.com/arceos-hypervisor/x86_vcpu) crate
+/// and use it to call OS-related resource allocation interfaces to implement `PhysFrameIf`.
+#[cfg(target_arch = "x86_64")]
+mod frame_x86 {
+    use memory_addr::{PhysAddr, VirtAddr};
+    use page_table_multiarch::PagingHandler;
 
-        /// Implementation for `PhysFrameIf` trait provided by [x86_vcpu](https://github.com/arceos-hypervisor/x86_vcpu) crate.
-        struct PhysFrameIfImpl;
+    use axvm::AxVMHal;
 
-        #[crate_interface::impl_interface]
-        impl axvm::PhysFrameIf for PhysFrameIfImpl {
-            fn alloc_frame() -> Option<PhysAddr> {
-                <AxVMHalImpl as AxVMHal>::PagingHandler::alloc_frame()
-            }
+    use crate::hal::AxVMHalImpl;
 
-            fn dealloc_frame(paddr: PhysAddr) {
-                <AxVMHalImpl as AxVMHal>::PagingHandler::dealloc_frame(paddr)
-            }
+    /// Implementation for `PhysFrameIf` trait provided by [x86_vcpu](https://github.com/arceos-hypervisor/x86_vcpu) crate.
+    struct PhysFrameIfImpl;
 
-            #[inline]
-            fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
-                <AxVMHalImpl as AxVMHal>::PagingHandler::phys_to_virt(paddr)
-            }
+    #[crate_interface::impl_interface]
+    impl x86_vcpu::PhysFrameIf for PhysFrameIfImpl {
+        fn alloc_frame() -> Option<PhysAddr> {
+            <AxVMHalImpl as AxVMHal>::PagingHandler::alloc_frame()
+        }
+
+        fn dealloc_frame(paddr: PhysAddr) {
+            <AxVMHalImpl as AxVMHal>::PagingHandler::dealloc_frame(paddr)
+        }
+
+        #[inline]
+        fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
+            <AxVMHalImpl as AxVMHal>::PagingHandler::phys_to_virt(paddr)
         }
     }
 }

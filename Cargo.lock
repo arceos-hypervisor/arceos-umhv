@@ -60,10 +60,8 @@ dependencies = [
  "axvcpu",
  "axvm",
  "bitflags 2.6.0",
- "cfg-if",
  "crate_interface",
  "fdt",
- "lazy_static",
  "log",
  "memory_addr",
  "page_table_entry",
@@ -73,6 +71,7 @@ dependencies = [
  "spin",
  "x86",
  "x86_64 0.14.12",
+ "x86_vcpu",
 ]
 
 [[package]]
@@ -115,7 +114,7 @@ dependencies = [
 [[package]]
 name = "arm_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arm_vcpu.git#a02c5a020c11298525c5e12f474f3cf8c9816c91"
+source = "git+https://github.com/arceos-hypervisor/arm_vcpu.git#f4cdb4dff43622d7e022125e8ea86c2e511bf322"
 dependencies = [
  "aarch64-cpu",
  "axaddrspace",
@@ -435,7 +434,7 @@ dependencies = [
 [[package]]
 name = "axvcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvcpu.git?rev=2c08c99#2c08c99fc055bd3b52fa0cd8a5d56822a3db34f9"
+source = "git+https://github.com/arceos-hypervisor/axvcpu.git#8268f2bc81ab9543fdbde6fed7d739e20107532a"
 dependencies = [
  "axaddrspace",
  "axerrno",
@@ -707,9 +706,6 @@ name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
-dependencies = [
- "spin",
-]
 
 [[package]]
 name = "lazyinit"
@@ -974,7 +970,7 @@ dependencies = [
 [[package]]
 name = "riscv_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/riscv_vcpu.git#592adf51de685c8f06aa4b9e7e58cc1be7d87d94"
+source = "git+https://github.com/arceos-hypervisor/riscv_vcpu.git#dcc6d2615cb2d1c00ac8c0b433aa5fb2491eb0b3"
 dependencies = [
  "axaddrspace",
  "axerrno",
@@ -1348,7 +1344,7 @@ dependencies = [
 [[package]]
 name = "x86_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/x86_vcpu.git#58a4f8820787b5af633e9e5e3f1490b6672d3f46"
+source = "git+https://github.com/arceos-hypervisor/x86_vcpu.git#db009d133e2ebf677db087fee9bc038ba01905aa"
 dependencies = [
  "axaddrspace",
  "axerrno",
