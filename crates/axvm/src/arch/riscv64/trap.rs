@@ -9,6 +9,10 @@ use riscv::register::hstatus;
 use super::regs::*;
 use super::irq::handler_irq;
 
+extern "C" {
+    fn vmexit_riscv_handler(state: *mut VmCpuRegisters);
+}
+
 #[allow(dead_code)]
 const fn hyp_gpr_offset(index: GprIndex) -> usize {
     offset_of!(VmCpuRegisters, hyp_regs)
@@ -113,36 +117,21 @@ fn handle_breakpoint(sepc: &mut usize) {
 }
 
 fn handle_page_fault(tf: &VmCpuRegisters, mut access_flags: MappingFlags, is_user: bool) {
-    // if is_user {
-    //     access_flags |= MappingFlags::USER;
-    // }
-    // let vaddr = VirtAddr::from(stval::read());
-    // if !handle_trap!(PAGE_FAULT, vaddr, access_flags, is_user) {
-    //     panic!(
-    //         "Unhandled {} Page Fault @ {:#x}, fault_vaddr={:#x} ({:?}):\n{:#x?}",
-    //         if is_user { "User" } else { "Supervisor" },
-    //         tf.guest_regs.sepc,
-    //         vaddr,
-    //         access_flags,
-    //         tf.guest_regs,
-    //     );
-    // }
+
+    let vaddr = VirtAddr::from(stval::read());
+    
+    panic!(
+        "Unhandled {} Page Fault @ {:#x}, fault_vaddr={:#x} ({:?}):\n{:#x?}",
+        if is_user { "User" } else { "Supervisor" },
+        tf.guest_regs.sepc,
+        vaddr,
+        access_flags,
+        tf.guest_regs,
+    );
+
     todo!()
 }
 
-#[naked]
-#[no_mangle]
-pub unsafe extern "C" fn vmexit_riscv_handler(tf: &mut VmCpuRegisters) {
-    core::arch::asm!(
-        // "add sp, sp, 34 * 8", // skip the exception frame
-        // "mov x9, sp",
-        // "ldr x10, [x9]",
-        "mv sp, a0",          
-        "RESTORE_HOST_STATE", // restore host context
-        "ret",
-        options(noreturn),
-    )
-}
 
 #[no_mangle]
 fn trap_handler(tf: &mut VmCpuRegisters, from_user: bool) {
@@ -159,8 +148,9 @@ fn trap_handler(tf: &mut VmCpuRegisters, from_user: bool) {
         }
         _ => {
             // from V = 0
-            info!("trap not from guest!");
+            
             let scause = scause::read();
+            info!("trap not from guest! scause: {:?}", scause.cause());
             match scause.cause() {
                 Trap::Exception(E::LoadPageFault) => handle_page_fault(tf, MappingFlags::READ, from_user),
                 Trap::Exception(E::StorePageFault) => handle_page_fault(tf, MappingFlags::WRITE, from_user),

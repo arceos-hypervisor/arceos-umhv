@@ -19,7 +19,7 @@ cfg-if = "1.0"
 #     "alloc",
 #     "paging",
 #     "fs",
-#     # "irq",
+#     "irq",
 #     "hv",
 # ], optional = true }
 

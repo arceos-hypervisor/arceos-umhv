@@ -42,10 +42,9 @@
 	sd    t0, ({guest_sp})(sp)
 
 .if \from_user == 1
-    ld    t0, ({guest_tp})(sp)        
     sd    gp, ({guest_gp})(sp)        
     sd    tp, ({guest_tp})(sp)  
-    mv    tp, t0
+    ld    tp, ({hyp_tp})(sp)
 .endif
 
 .endm
@@ -53,10 +52,9 @@
 /* U mode and S mode use, guests use run_guest to resume guests. */
 .macro RESTORE_STATE, from_user
 .if \from_user == 1
-    ld    gp, ({guest_gp})(sp)          
-    ld    t0, ({guest_tp})(sp)
-    sd    tp, ({guest_tp})(sp)          
-    mv    tp, t0
+    ld    gp, ({guest_gp})(sp) 
+    sd    tp, ({hyp_tp})(sp)          
+    ld    tp, ({guest_tp})(sp)
     addi  t0, sp, {trapframe_size}     
     csrw  sscratch, t0
 .endif
@@ -103,38 +101,38 @@
 
 /* this macro is used for hypervisor to restore host state */
 .macro RESTORE_HOST_STATE
-	ld    t1, ({hyp_sstatus})(sp)
+	ld    t1, ({hyp_sstatus})(a0)
     csrw  sstatus, t1
-    ld    t1, ({hyp_hstatus})(sp)
+    ld    t1, ({hyp_hstatus})(a0)
     csrw  hstatus, t1
-    ld    t1, ({hyp_scounteren})(sp)
+    ld    t1, ({hyp_scounteren})(a0)
     csrw  scounteren, t1
-    ld    t1, ({hyp_sscratch})(sp)
+    ld    t1, ({hyp_sscratch})(a0)
     csrw  sscratch, t1
 
-	ld   ra, ({hyp_ra})(sp)
-    ld   gp, ({hyp_gp})(sp)
-    ld   tp, ({hyp_tp})(sp)
-    ld   s0, ({hyp_s0})(sp)
-    ld   s1, ({hyp_s1})(sp)
-    ld   a1, ({hyp_a1})(sp)
-    ld   a2, ({hyp_a2})(sp)
-    ld   a3, ({hyp_a3})(sp)
-    ld   a4, ({hyp_a4})(sp)
-    ld   a5, ({hyp_a5})(sp)
-    ld   a6, ({hyp_a6})(sp)
-    ld   a7, ({hyp_a7})(sp)
-    ld   s2, ({hyp_s2})(sp)
-    ld   s3, ({hyp_s3})(sp)
-    ld   s4, ({hyp_s4})(sp)
-    ld   s5, ({hyp_s5})(sp)
-    ld   s6, ({hyp_s6})(sp)
-    ld   s7, ({hyp_s7})(sp)
-    ld   s8, ({hyp_s8})(sp)
-    ld   s9, ({hyp_s9})(sp)
-    ld   s10, ({hyp_s10})(sp)
-    ld   s11, ({hyp_s11})(sp)
-    ld   sp, ({hyp_sp})(sp)
+	ld   ra, ({hyp_ra})(a0)
+    ld   gp, ({hyp_gp})(a0)
+    ld   tp, ({hyp_tp})(a0)
+    ld   s0, ({hyp_s0})(a0)
+    ld   s1, ({hyp_s1})(a0)
+    ld   a1, ({hyp_a1})(a0)
+    ld   a2, ({hyp_a2})(a0)
+    ld   a3, ({hyp_a3})(a0)
+    ld   a4, ({hyp_a4})(a0)
+    ld   a5, ({hyp_a5})(a0)
+    ld   a6, ({hyp_a6})(a0)
+    ld   a7, ({hyp_a7})(a0)
+    ld   s2, ({hyp_s2})(a0)
+    ld   s3, ({hyp_s3})(a0)
+    ld   s4, ({hyp_s4})(a0)
+    ld   s5, ({hyp_s5})(a0)
+    ld   s6, ({hyp_s6})(a0)
+    ld   s7, ({hyp_s7})(a0)
+    ld   s8, ({hyp_s8})(a0)
+    ld   s9, ({hyp_s9})(a0)
+    ld   s10, ({hyp_s10})(a0)
+    ld   s11, ({hyp_s11})(a0)
+    ld   sp, ({hyp_sp})(a0)
 .endm
 
 .section .text
@@ -213,17 +211,14 @@ _run_guest:
     csrw  sepc, t1
 
     /* Save sscratch and replace with pointer to GuestInfo. */
-    csrrw t1, sscratch, a0
+    addi  t1, a0, {trapframe_size}
+    csrrw t1, sscratch, t1
     sd    t1, ({hyp_sscratch})(a0)
 
     /* Restore the gprs from this GuestInfo */
     ld   ra, ({guest_ra})(a0)
-    ld   gp, ({guest_gp})(a0)
-
-    mv   t0, tp        
+    ld   gp, ({guest_gp})(a0)       
     ld   tp, ({guest_tp})(a0)
-    sd   t0, ({guest_tp})(a0) 
-
     ld   s0, ({guest_s0})(a0)
     ld   s1, ({guest_s1})(a0)
     ld   a1, ({guest_a1})(a0)
@@ -303,3 +298,7 @@ _test_guest:
 
     ret
 
+.global vmexit_riscv_handler
+vmexit_riscv_handler:
+    RESTORE_HOST_STATE
+    ret
