@@ -6,6 +6,7 @@ use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::AxVMHal;
 use axaddrspace::HostPhysAddr;
 use axvcpu::AxArchVCpuExitReason;
+use super::irq;
 
 use super::regs::*;
 use super::timers;
@@ -13,7 +14,7 @@ use super::timers::{register_timer, TimerEventFn};
 use sbi_rt::{pmu_counter_get_info, pmu_counter_stop};
 
 extern "C" {
-    fn _test_guest(state: *mut VmCpuRegisters);
+    // fn _test_guest(state: *mut VmCpuRegisters);
     fn _run_guest(state: *mut VmCpuRegisters);
 }
 
@@ -91,9 +92,9 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
         unsafe {
             // Safe to run the guest as it only touches memory assigned to it by being owned
             // by its page table
-            _test_guest(regs);
-            info!("before running guest!");
-            info!("{:p} {:#x?}",regs, regs);
+            // _test_guest(regs);
+            // info!("before running guest!");
+            // info!("{:p} {:#x?}",regs, regs);
             _run_guest(regs);
         }
         // unsafe {
@@ -154,14 +155,15 @@ impl<H: AxVMHal> VCpu<H> {
             Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 // info!("timer irq emulation");
                 // cannot use handler_irq directly, because it is private in arceos.
-                unsafe {
-                    sie::clear_stimer();
-                }
-                timers::check_events();
-                timers::scheduler_next_event();
-                unsafe {
-                    sie::set_stimer();
-                }
+                // unsafe {
+                //     sie::clear_stimer();
+                // }
+                // timers::check_events();
+                // timers::scheduler_next_event();
+                // unsafe {
+                //     sie::set_stimer();
+                // }
+                irq::handler_irq(irq::TIMER_IRQ_NUM);
                 Ok(AxArchVCpuExitReason::Nothing)
             }
             Trap::Interrupt(Interrupt::SupervisorExternal) => {

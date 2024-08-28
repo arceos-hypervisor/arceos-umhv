@@ -45,8 +45,10 @@ pub fn check_events() {
         let now = TimeValue::from_nanos(riscv::register::time::read() as u64 * NANOS_PER_TICK);
         info!("1");
         let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
+        info!("{:p}",timer_list);
+        let mut event = timer_list.lock();
         info!("1");
-        let event = timer_list.lock().expire_one(now);
+        let event = event.expire_one(now);
         info!("1");
         if let Some((_deadline, event)) = event {
             info!("pick one to handler!!!");

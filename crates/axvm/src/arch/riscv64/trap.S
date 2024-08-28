@@ -101,15 +101,6 @@
 
 /* this macro is used for hypervisor to restore host state */
 .macro RESTORE_HOST_STATE
-	ld    t1, ({hyp_sstatus})(a0)
-    csrw  sstatus, t1
-    ld    t1, ({hyp_hstatus})(a0)
-    csrw  hstatus, t1
-    ld    t1, ({hyp_scounteren})(a0)
-    csrw  scounteren, t1
-    ld    t1, ({hyp_sscratch})(a0)
-    csrw  sscratch, t1
-
 	ld   ra, ({hyp_ra})(a0)
     ld   gp, ({hyp_gp})(a0)
     ld   tp, ({hyp_tp})(a0)
@@ -133,6 +124,16 @@
     ld   s10, ({hyp_s10})(a0)
     ld   s11, ({hyp_s11})(a0)
     ld   sp, ({hyp_sp})(a0)
+
+    
+    ld    t1, ({hyp_hstatus})(a0)
+    csrw  hstatus, t1
+    ld    t1, ({hyp_scounteren})(a0)
+    csrw  scounteren, t1
+    ld    t1, ({hyp_sscratch})(a0)
+    csrw  sscratch, t1
+    ld    t1, ({hyp_sstatus})(a0)
+    csrw  sstatus, t1
 .endm
 
 .section .text
@@ -250,53 +251,53 @@ _run_guest:
 
     sret
 
-.global _test_guest
-_test_guest:
-    /* Save hypervisor state */
+; .global _test_guest
+; _test_guest:
+;     /* Save hypervisor state */
 
-    /* Save hypervisor GPRs (except T0-T6 and a0, which is GuestInfo and stashed in sscratch) */
-    sd   ra, ({hyp_ra})(a0)
-    sd   gp, ({hyp_gp})(a0)
-    sd   tp, ({hyp_tp})(a0)
-    sd   s0, ({hyp_s0})(a0)
-    sd   s1, ({hyp_s1})(a0)
-    sd   a0, ({hyp_a0})(a0)
-    sd   a1, ({hyp_a1})(a0)
-    sd   a2, ({hyp_a2})(a0)
-    sd   a3, ({hyp_a3})(a0)
-    sd   a4, ({hyp_a4})(a0)
-    sd   a5, ({hyp_a5})(a0)
-    sd   a6, ({hyp_a6})(a0)
-    sd   a7, ({hyp_a7})(a0)
-    sd   s2, ({hyp_s2})(a0)
-    sd   s3, ({hyp_s3})(a0)
-    sd   s4, ({hyp_s4})(a0)
-    sd   s5, ({hyp_s5})(a0)
-    sd   s6, ({hyp_s6})(a0)
-    sd   s7, ({hyp_s7})(a0)
-    sd   s8, ({hyp_s8})(a0)
-    sd   s9, ({hyp_s9})(a0)
-    sd   s10, ({hyp_s10})(a0)
-    sd   s11, ({hyp_s11})(a0)
-    sd   sp, ({hyp_sp})(a0)
+;     /* Save hypervisor GPRs (except T0-T6 and a0, which is GuestInfo and stashed in sscratch) */
+;     sd   ra, ({hyp_ra})(a0)
+;     sd   gp, ({hyp_gp})(a0)
+;     sd   tp, ({hyp_tp})(a0)
+;     sd   s0, ({hyp_s0})(a0)
+;     sd   s1, ({hyp_s1})(a0)
+;     sd   a0, ({hyp_a0})(a0)
+;     sd   a1, ({hyp_a1})(a0)
+;     sd   a2, ({hyp_a2})(a0)
+;     sd   a3, ({hyp_a3})(a0)
+;     sd   a4, ({hyp_a4})(a0)
+;     sd   a5, ({hyp_a5})(a0)
+;     sd   a6, ({hyp_a6})(a0)
+;     sd   a7, ({hyp_a7})(a0)
+;     sd   s2, ({hyp_s2})(a0)
+;     sd   s3, ({hyp_s3})(a0)
+;     sd   s4, ({hyp_s4})(a0)
+;     sd   s5, ({hyp_s5})(a0)
+;     sd   s6, ({hyp_s6})(a0)
+;     sd   s7, ({hyp_s7})(a0)
+;     sd   s8, ({hyp_s8})(a0)
+;     sd   s9, ({hyp_s9})(a0)
+;     sd   s10, ({hyp_s10})(a0)
+;     sd   s11, ({hyp_s11})(a0)
+;     sd   sp, ({hyp_sp})(a0)
 
-    /* Swap in guest CSRs. */
-    csrr  t1, sstatus
-    sd    t1, ({hyp_sstatus})(a0)
+;     /* Swap in guest CSRs. */
+;     csrr  t1, sstatus
+;     sd    t1, ({hyp_sstatus})(a0)
 
     
-    csrr t1, hstatus
-    sd    t1, ({hyp_hstatus})(a0)
+;     csrr t1, hstatus
+;     sd    t1, ({hyp_hstatus})(a0)
 
    
-    csrr t1, scounteren
-    sd    t1, ({hyp_scounteren})(a0)
+;     csrr t1, scounteren
+;     sd    t1, ({hyp_scounteren})(a0)
 
-    /* Save sscratch and replace with pointer to GuestInfo. */
-    csrr t1, sscratch
-    sd    t1, ({hyp_sscratch})(a0)
+;     /* Save sscratch and replace with pointer to GuestInfo. */
+;     csrr t1, sscratch
+;     sd    t1, ({hyp_sscratch})(a0)
 
-    ret
+;     ret
 
 .global vmexit_riscv_handler
 vmexit_riscv_handler:

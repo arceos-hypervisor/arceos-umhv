@@ -133,9 +133,17 @@ fn handle_page_fault(tf: &VmCpuRegisters, mut access_flags: MappingFlags, is_use
 }
 
 
+#[inline]
+pub fn read_thread_pointer() -> usize {
+    let tp;
+    unsafe { core::arch::asm!("mv {}, tp", out(reg) tp) };
+    tp
+}
+
 #[no_mangle]
 fn trap_handler(tf: &mut VmCpuRegisters, from_user: bool) {
     let hstatus = hstatus::read();
+    info!("tp:{:x}",read_thread_pointer());
     match hstatus.spv() {
         true => {
             // from V = 1
