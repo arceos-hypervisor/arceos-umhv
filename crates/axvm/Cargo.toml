@@ -40,10 +40,10 @@ sbi-spec = { version = "0.0.6", features = ["legacy"] }
 sbi-rt = { version = "0.0.2", features = ["integer-impls", "legacy"] }
 tock-registers = "0.8.1"
 memoffset = { version = ">=0.6.5", features = ["unstable_const"] }
-axhal = { path = "../../../arceos/modules/axhal", features = ["paging"] }
 kspin = "0.1"
 lazyinit = "0.2"
 timer_list = "0.1.0"
+handler_table = "0.1"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 # axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "f04a23f", features = ["hv"] }

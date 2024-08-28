@@ -5,12 +5,13 @@ use axerrno::AxResult;
 use super::consts::traps;
 use super::detect::detect_h_extension;
 use super::timers;
+use super::irq;
 use crate::AxVMHal;
 use riscv::register::{hedeleg, hideleg, hvip, sie, stvec};
 
-// extern "C" {
-//     fn _guest_exit();
-// }
+extern "C" {
+    fn trap_base();
+}
 
 pub struct PerCpu<H: AxVMHal> {
     _marker: core::marker::PhantomData<H>,
@@ -22,11 +23,9 @@ impl<H: AxVMHal> AxVMArchPerCpu for PerCpu<H> {
             setup_csrs();
         }
 
-        // #[cfg(feature = "irq")]
         if cpu_id == 0 {
-            info!("register_handler");
-            //TODO: dont use axhal
-            axhal::irq::register_handler(axhal::time::TIMER_IRQ_NUM, || {
+            info!("[TRANCE]register_handler");
+            irq::register_handler(irq::TIMER_IRQ_NUM, || {
                 // info!("TIMER_IRQ_NUM handler!!!");
                 unsafe {
                     sie::clear_stimer();
@@ -101,5 +100,5 @@ unsafe fn setup_csrs() {
     sie::set_ssoft();
     sie::set_stimer();
 
-    // stvec::write(_guest_exit as usize, stvec::TrapMode::Direct);
+    stvec::write(trap_base as usize, stvec::TrapMode::Direct);
 }
