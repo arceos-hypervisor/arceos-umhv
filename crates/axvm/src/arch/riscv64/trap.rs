@@ -1,13 +1,13 @@
-use memory_addr::VirtAddr;
-use page_table_entry::MappingFlags;
 use core::mem::size_of;
 use memoffset::offset_of;
+use memory_addr::VirtAddr;
+use page_table_entry::MappingFlags;
+use riscv::register::hstatus;
 use riscv::register::scause::{self, Exception as E, Trap};
 use riscv::register::stval;
-use riscv::register::hstatus;
 
-use super::regs::*;
 use super::irq::handler_irq;
+use super::regs::*;
 
 extern "C" {
     fn vmexit_riscv_handler(state: *mut VmCpuRegisters);
@@ -49,7 +49,7 @@ core::arch::global_asm!(
     hyp_tp = const hyp_gpr_offset(GprIndex::TP),
     hyp_s0 = const hyp_gpr_offset(GprIndex::S0),
     hyp_s1 = const hyp_gpr_offset(GprIndex::S1),
-    hyp_a0 = const hyp_gpr_offset(GprIndex::A0),
+    // hyp_a0 = const hyp_gpr_offset(GprIndex::A0),
     hyp_a1 = const hyp_gpr_offset(GprIndex::A1),
     hyp_a2 = const hyp_gpr_offset(GprIndex::A2),
     hyp_a3 = const hyp_gpr_offset(GprIndex::A3),
@@ -117,9 +117,8 @@ fn handle_breakpoint(sepc: &mut usize) {
 }
 
 fn handle_page_fault(tf: &VmCpuRegisters, mut access_flags: MappingFlags, is_user: bool) {
-
     let vaddr = VirtAddr::from(stval::read());
-    
+
     panic!(
         "Unhandled {} Page Fault @ {:#x}, fault_vaddr={:#x} ({:?}):\n{:#x?}",
         if is_user { "User" } else { "Supervisor" },
@@ -132,36 +131,30 @@ fn handle_page_fault(tf: &VmCpuRegisters, mut access_flags: MappingFlags, is_use
     todo!()
 }
 
-
-#[inline]
-pub fn read_thread_pointer() -> usize {
-    let tp;
-    unsafe { core::arch::asm!("mv {}, tp", out(reg) tp) };
-    tp
-}
-
 #[no_mangle]
 fn trap_handler(tf: &mut VmCpuRegisters, from_user: bool) {
     let hstatus = hstatus::read();
-    info!("tp:{:x}",read_thread_pointer());
+    
     match hstatus.spv() {
         true => {
             // from V = 1
             info!("trap from guest!");
-            info!("{:p} {:#x?}",tf, tf);
-            unsafe{
+            unsafe {
                 vmexit_riscv_handler(tf);
             }
-            
         }
         _ => {
             // from V = 0
-            
+
             let scause = scause::read();
             info!("trap not from guest! scause: {:?}", scause.cause());
             match scause.cause() {
-                Trap::Exception(E::LoadPageFault) => handle_page_fault(tf, MappingFlags::READ, from_user),
-                Trap::Exception(E::StorePageFault) => handle_page_fault(tf, MappingFlags::WRITE, from_user),
+                Trap::Exception(E::LoadPageFault) => {
+                    handle_page_fault(tf, MappingFlags::READ, from_user)
+                }
+                Trap::Exception(E::StorePageFault) => {
+                    handle_page_fault(tf, MappingFlags::WRITE, from_user)
+                }
                 Trap::Exception(E::InstructionPageFault) => {
                     handle_page_fault(tf, MappingFlags::EXECUTE, from_user)
                 }
@@ -181,5 +174,4 @@ fn trap_handler(tf: &mut VmCpuRegisters, from_user: bool) {
             }
         }
     }
-    
 }

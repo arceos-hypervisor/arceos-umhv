@@ -4,8 +4,8 @@ use axerrno::AxResult;
 
 use super::consts::traps;
 use super::detect::detect_h_extension;
-use super::timers;
 use super::irq;
+use super::timers;
 use crate::AxVMHal;
 use riscv::register::{hedeleg, hideleg, hvip, sie, stvec};
 
@@ -24,9 +24,7 @@ impl<H: AxVMHal> AxVMArchPerCpu for PerCpu<H> {
         }
 
         if cpu_id == 0 {
-            info!("[TRANCE]register_handler");
             irq::register_handler(irq::TIMER_IRQ_NUM, || {
-                // info!("TIMER_IRQ_NUM handler!!!");
                 unsafe {
                     sie::clear_stimer();
                 }

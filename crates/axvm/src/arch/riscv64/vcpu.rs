@@ -2,11 +2,11 @@ use axerrno::AxResult;
 use core::marker::PhantomData;
 use riscv::register::{hstatus, htinst, htval, hvip, scause, sie, sstatus, stval};
 
+use super::irq;
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 use crate::AxVMHal;
 use axaddrspace::HostPhysAddr;
 use axvcpu::AxArchVCpuExitReason;
-use super::irq;
 
 use super::regs::*;
 use super::timers;
@@ -81,29 +81,15 @@ impl<H: AxVMHal> axvcpu::AxArchVCpu for VCpu<H> {
 
     fn run(&mut self) -> AxResult<AxArchVCpuExitReason> {
         let regs = &mut self.regs;
-        // unsafe {
-        //     sstatus::clear_sie();
-        //     sie::set_sext();
-        //     sie::set_ssoft();
-        //     sie::set_stimer();
-        // }
 
-        debug!("before run");
         unsafe {
             // Safe to run the guest as it only touches memory assigned to it by being owned
             // by its page table
-            // _test_guest(regs);
             // info!("before running guest!");
             // info!("{:p} {:#x?}",regs, regs);
             _run_guest(regs);
         }
-        // unsafe {
-        //     sie::clear_sext();
-        //     sie::clear_ssoft();
-        //     sie::clear_stimer();
-        //     sstatus::set_sie();
-        // }
-        info!("vmexit_handler!!!");
+        // info!("vmexit_handler!!!");
         self.vmexit_handler()
     }
 
@@ -153,16 +139,6 @@ impl<H: AxVMHal> VCpu<H> {
         match scause.cause() {
             Trap::Exception(Exception::VirtualSupervisorEnvCall) => self.handle_sbi_msg(),
             Trap::Interrupt(Interrupt::SupervisorTimer) => {
-                // info!("timer irq emulation");
-                // cannot use handler_irq directly, because it is private in arceos.
-                // unsafe {
-                //     sie::clear_stimer();
-                // }
-                // timers::check_events();
-                // timers::scheduler_next_event();
-                // unsafe {
-                //     sie::set_stimer();
-                // }
                 irq::handler_irq(irq::TIMER_IRQ_NUM);
                 Ok(AxArchVCpuExitReason::Nothing)
             }
