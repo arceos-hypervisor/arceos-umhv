@@ -1,6 +1,6 @@
 use axerrno::AxResult;
 use core::marker::PhantomData;
-use riscv::register::{hstatus, htinst, htval, hvip, scause, sie, sstatus, stval};
+use riscv::register::{hstatus, hvip, scause, sstatus, stval};
 
 use super::irq;
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
@@ -9,7 +9,6 @@ use axaddrspace::HostPhysAddr;
 use axvcpu::AxArchVCpuExitReason;
 
 use super::regs::*;
-use super::timers;
 use super::timers::{register_timer, TimerEventFn};
 use core::mem::size_of;
 use riscv::addr::BitField;

@@ -2,7 +2,6 @@
 
 use handler_table::HandlerTable;
 use lazyinit::LazyInit;
-use riscv::register::sie;
 
 /// The type if an IRQ handler.
 pub type IrqHandler = handler_table::Handler;

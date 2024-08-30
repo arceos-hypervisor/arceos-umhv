@@ -50,7 +50,7 @@ core::arch::global_asm!(
     hyp_tp = const hyp_gpr_offset(GprIndex::TP),
     hyp_s0 = const hyp_gpr_offset(GprIndex::S0),
     hyp_s1 = const hyp_gpr_offset(GprIndex::S1),
-    hyp_a0 = const hyp_gpr_offset(GprIndex::A0),
+    // hyp_a0 = const hyp_gpr_offset(GprIndex::A0),
     hyp_a1 = const hyp_gpr_offset(GprIndex::A1),
     hyp_a2 = const hyp_gpr_offset(GprIndex::A2),
     hyp_a3 = const hyp_gpr_offset(GprIndex::A3),
@@ -119,7 +119,7 @@ fn handle_breakpoint(sepc: &mut usize) {
     *sepc += 2
 }
 
-fn handle_page_fault(tf: &VmCpuRegisters, mut access_flags: MappingFlags, is_user: bool) {
+fn handle_page_fault(tf: &VmCpuRegisters, access_flags: MappingFlags, is_user: bool) {
     let vaddr = VirtAddr::from(stval::read());
 
     panic!(
@@ -130,8 +130,6 @@ fn handle_page_fault(tf: &VmCpuRegisters, mut access_flags: MappingFlags, is_use
         access_flags,
         tf.guest_regs,
     );
-
-    todo!()
 }
 
 #[no_mangle]
