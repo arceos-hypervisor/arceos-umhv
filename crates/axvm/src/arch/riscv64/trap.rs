@@ -2,16 +2,15 @@ use core::mem::size_of;
 use memoffset::offset_of;
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
-use riscv::register::hstatus;
+use riscv::register::{hstatus, stval, htinst, htval};
 use riscv::register::scause::{self, Exception as E, Trap};
-use riscv::register::stval;
 
 use super::irq::handler_irq;
 use super::regs::*;
 
-extern "C" {
-    fn vmexit_riscv_handler(state: *mut VmCpuRegisters);
-}
+// extern "C" {
+//     fn vmexit_riscv_handler(state: *mut VmCpuRegisters);
+// }
 
 #[allow(dead_code)]
 const fn hyp_gpr_offset(index: GprIndex) -> usize {
@@ -42,37 +41,37 @@ macro_rules! guest_csr_offset {
 }
 
 core::arch::global_asm!(
-    include_str!("trap.S"),
+    include_str!("trap2.S"),
     trapframe_size = const core::mem::size_of::<VmCpuRegisters>(),
-    hyp_ra = const hyp_gpr_offset(GprIndex::RA),
-    hyp_gp = const hyp_gpr_offset(GprIndex::GP),
-    hyp_tp = const hyp_gpr_offset(GprIndex::TP),
-    hyp_s0 = const hyp_gpr_offset(GprIndex::S0),
-    hyp_s1 = const hyp_gpr_offset(GprIndex::S1),
+    // hyp_ra = const hyp_gpr_offset(GprIndex::RA),
+    // hyp_gp = const hyp_gpr_offset(GprIndex::GP),
+    // hyp_tp = const hyp_gpr_offset(GprIndex::TP),
+    // hyp_s0 = const hyp_gpr_offset(GprIndex::S0),
+    // hyp_s1 = const hyp_gpr_offset(GprIndex::S1),
     // hyp_a0 = const hyp_gpr_offset(GprIndex::A0),
-    hyp_a1 = const hyp_gpr_offset(GprIndex::A1),
-    hyp_a2 = const hyp_gpr_offset(GprIndex::A2),
-    hyp_a3 = const hyp_gpr_offset(GprIndex::A3),
-    hyp_a4 = const hyp_gpr_offset(GprIndex::A4),
-    hyp_a5 = const hyp_gpr_offset(GprIndex::A5),
-    hyp_a6 = const hyp_gpr_offset(GprIndex::A6),
-    hyp_a7 = const hyp_gpr_offset(GprIndex::A7),
-    hyp_s2 = const hyp_gpr_offset(GprIndex::S2),
-    hyp_s3 = const hyp_gpr_offset(GprIndex::S3),
-    hyp_s4 = const hyp_gpr_offset(GprIndex::S4),
-    hyp_s5 = const hyp_gpr_offset(GprIndex::S5),
-    hyp_s6 = const hyp_gpr_offset(GprIndex::S6),
-    hyp_s7 = const hyp_gpr_offset(GprIndex::S7),
-    hyp_s8 = const hyp_gpr_offset(GprIndex::S8),
-    hyp_s9 = const hyp_gpr_offset(GprIndex::S9),
-    hyp_s10 = const hyp_gpr_offset(GprIndex::S10),
-    hyp_s11 = const hyp_gpr_offset(GprIndex::S11),
-    hyp_sp = const hyp_gpr_offset(GprIndex::SP),
-    hyp_sstatus = const hyp_csr_offset!(sstatus),
-    hyp_hstatus = const hyp_csr_offset!(hstatus),
-    hyp_scounteren = const hyp_csr_offset!(scounteren),
+    // hyp_a1 = const hyp_gpr_offset(GprIndex::A1),
+    // hyp_a2 = const hyp_gpr_offset(GprIndex::A2),
+    // hyp_a3 = const hyp_gpr_offset(GprIndex::A3),
+    // hyp_a4 = const hyp_gpr_offset(GprIndex::A4),
+    // hyp_a5 = const hyp_gpr_offset(GprIndex::A5),
+    // hyp_a6 = const hyp_gpr_offset(GprIndex::A6),
+    // hyp_a7 = const hyp_gpr_offset(GprIndex::A7),
+    // hyp_s2 = const hyp_gpr_offset(GprIndex::S2),
+    // hyp_s3 = const hyp_gpr_offset(GprIndex::S3),
+    // hyp_s4 = const hyp_gpr_offset(GprIndex::S4),
+    // hyp_s5 = const hyp_gpr_offset(GprIndex::S5),
+    // hyp_s6 = const hyp_gpr_offset(GprIndex::S6),
+    // hyp_s7 = const hyp_gpr_offset(GprIndex::S7),
+    // hyp_s8 = const hyp_gpr_offset(GprIndex::S8),
+    // hyp_s9 = const hyp_gpr_offset(GprIndex::S9),
+    // hyp_s10 = const hyp_gpr_offset(GprIndex::S10),
+    // hyp_s11 = const hyp_gpr_offset(GprIndex::S11),
+    // hyp_sp = const hyp_gpr_offset(GprIndex::SP),
+    // hyp_sstatus = const hyp_csr_offset!(sstatus),
+    // hyp_hstatus = const hyp_csr_offset!(hstatus),
+    // hyp_scounteren = const hyp_csr_offset!(scounteren),
     // hyp_stvec = const hyp_csr_offset!(stvec),
-    hyp_sscratch = const hyp_csr_offset!(sscratch),
+    // hyp_sscratch = const hyp_csr_offset!(sscratch),
     guest_ra = const guest_gpr_offset(GprIndex::RA),
     guest_gp = const guest_gpr_offset(GprIndex::GP),
     guest_tp = const guest_gpr_offset(GprIndex::TP),
@@ -139,15 +138,21 @@ fn trap_handler(tf: &mut VmCpuRegisters, from_user: bool) {
         true => {
             // from V = 1
             info!("trap from guest!");
-            unsafe {
-                vmexit_riscv_handler(tf);
-            }
+            tf.trap_csrs.scause = scause::read().bits();
+            info!("scause:{:x}", scause::read().bits());
+            tf.trap_csrs.stval = stval::read();
+            tf.trap_csrs.htval = htval::read();
+            tf.trap_csrs.htinst = htinst::read();
+
+            // unsafe {
+            //     vmexit_riscv_handler(tf);
+            // }
         }
         _ => {
             // from V = 0
 
             let scause = scause::read();
-            info!("trap not from guest! scause: {:?}", scause.cause());
+            // info!("trap not from guest! scause: {:?}", scause.cause());
             match scause.cause() {
                 Trap::Exception(E::LoadPageFault) => {
                     handle_page_fault(tf, MappingFlags::READ, from_user)

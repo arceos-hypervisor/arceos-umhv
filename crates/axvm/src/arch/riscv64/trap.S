@@ -44,7 +44,7 @@
 .if \from_user == 1
     sd    gp, ({guest_gp})(sp)        
     sd    tp, ({guest_tp})(sp)  
-    ld    tp, ({hyp_tp})(sp)
+    ; ld    tp, ({hyp_tp})(sp)
 .endif
 
 .endm
@@ -53,7 +53,7 @@
 .macro RESTORE_STATE, from_user
 .if \from_user == 1
     ld    gp, ({guest_gp})(sp) 
-    sd    tp, ({hyp_tp})(sp)          
+    ; sd    tp, ({hyp_tp})(sp)          
     ld    tp, ({guest_tp})(sp)
     addi  t0, sp, {trapframe_size}     
     csrw  sscratch, t0
@@ -254,4 +254,52 @@ _run_guest:
 .global vmexit_riscv_handler
 vmexit_riscv_handler:
     RESTORE_HOST_STATE
+    ret
+
+.global _test_guest
+_test_guest:
+    /* Save hypervisor state */
+
+    /* Save hypervisor GPRs (except T0-T6 and a0, which is GuestInfo and stashed in sscratch) */
+    sd   ra, ({hyp_ra})(a0)
+    sd   gp, ({hyp_gp})(a0)
+    sd   tp, ({hyp_tp})(a0)
+    sd   s0, ({hyp_s0})(a0)
+    sd   s1, ({hyp_s1})(a0)
+    sd   a0, ({hyp_a0})(a0)
+    sd   a1, ({hyp_a1})(a0)
+    sd   a2, ({hyp_a2})(a0)
+    sd   a3, ({hyp_a3})(a0)
+    sd   a4, ({hyp_a4})(a0)
+    sd   a5, ({hyp_a5})(a0)
+    sd   a6, ({hyp_a6})(a0)
+    sd   a7, ({hyp_a7})(a0)
+    sd   s2, ({hyp_s2})(a0)
+    sd   s3, ({hyp_s3})(a0)
+    sd   s4, ({hyp_s4})(a0)
+    sd   s5, ({hyp_s5})(a0)
+    sd   s6, ({hyp_s6})(a0)
+    sd   s7, ({hyp_s7})(a0)
+    sd   s8, ({hyp_s8})(a0)
+    sd   s9, ({hyp_s9})(a0)
+    sd   s10, ({hyp_s10})(a0)
+    sd   s11, ({hyp_s11})(a0)
+    sd   sp, ({hyp_sp})(a0)
+
+    /* Swap in guest CSRs. */
+    csrr  t1, sstatus
+    sd    t1, ({hyp_sstatus})(a0)
+
+    
+    csrr t1, hstatus
+    sd    t1, ({hyp_hstatus})(a0)
+
+   
+    csrr t1, scounteren
+    sd    t1, ({hyp_scounteren})(a0)
+
+    /* Save sscratch and replace with pointer to GuestInfo. */
+    csrr t1, sscratch
+    sd    t1, ({hyp_sscratch})(a0)
+
     ret
