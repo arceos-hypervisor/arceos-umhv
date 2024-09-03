@@ -52,3 +52,54 @@ mod frame_x86 {
         }
     }
 }
+
+
+#[cfg(target_arch = "aarch64")]
+mod gic_trait {
+    use vgic::GicTrait;
+    use axhal::GICD;
+    /// Implementation for `PhysFrameIf` trait provided by [x86_vcpu](https://github.com/arceos-hypervisor/x86_vcpu) crate.
+    struct GicIfImpl;
+
+    #[crate_interface::impl_interface]
+    impl GicTrait for GicIfImpl{
+        fn set_enable(vector: usize, enable: bool) {
+            GICD.lock().set_enable(vector, enable);
+        }
+        fn get_enable(vector: usize) -> bool {
+            GICD.lock().get_enable(vector)
+        }
+    
+        fn get_typer() -> u32 {
+            GICD.lock().get_typer()
+        }
+        fn get_iidr() -> u32 {
+            GICD.lock().get_iidr()
+        }
+    
+        fn set_state(int_id: usize, state: usize, current_cpu_id: usize) {
+            GICD.lock().set_state(int_id, state, current_cpu_id);
+        }
+        fn get_state(int_id: usize) -> usize {
+            GICD.lock().get_state(int_id)
+        }
+    
+        fn set_icfgr(int_id: usize, cfg: u8) {
+            GICD.lock().set_icfgr(int_id, cfg);
+        }
+    
+        fn get_target_cpu(int_id: usize) -> usize {
+            GICD.lock().get_target_cpu(int_id)
+        }
+        fn set_target_cpu(int_id: usize, target: u8) {
+            GICD.lock().set_target_cpu(int_id, target);
+        }
+    
+        fn get_priority(int_id: usize) -> usize {
+            GICD.lock().get_priority(int_id)
+        }
+        fn set_priority(int_id: usize, priority: u8) {
+            GICD.lock().set_priority(int_id, priority);
+        }
+    }
+}
