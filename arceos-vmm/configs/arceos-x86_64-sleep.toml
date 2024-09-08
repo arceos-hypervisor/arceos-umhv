@@ -1,11 +1,12 @@
-id = 1
+id = 2
 name = "arceos"
 vm_type = 1
-cpu_set = 2
+cpu_num = 1
+phys_cpu_sets = [2]
 entry_point = 0x8000
 bios_path = "rvm-bios.bin"
 bios_load_addr = 0x8000
-kernel_path = "arceos-x86_64.bin"
+kernel_path = "arceos-x86-sleep.bin"
 kernel_load_addr = 0x20_0000
 # ramdisk_path = ""
 # ramdisk_load_addr = 0

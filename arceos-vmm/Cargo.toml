@@ -8,11 +8,11 @@ authors = ["Keyang Hu <976929993@qq.com>"]
 [dependencies]
 log = "=0.4.19"
 bitflags = "2.2"
-spin = "0.9"
+kspin = "0.1"
 
 # System dependent modules provided by ArceOS.
 axhal = { workspace = true, features = ["paging"] }
-axtask = { workspace = true, features = ["multitask"] }
+axtask = { workspace = true, features = ["multitask","hv"] }
 axstd = { workspace = true, features = [
     "alloc",
     "paging",
@@ -20,6 +20,7 @@ axstd = { workspace = true, features = [
     # "irq",
     "hv",
     "multitask",
+    "smp",
 ] }
 
 # System dependent modules provided by ArceOS-Hypervisor.

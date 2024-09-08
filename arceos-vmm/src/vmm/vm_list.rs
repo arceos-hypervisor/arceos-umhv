@@ -1,7 +1,7 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
-use spin::Mutex;
+use kspin::SpinNoPreempt;
 
 use crate::vmm::VMRef;
 
@@ -67,7 +67,7 @@ impl VMList {
 }
 
 // A global list of VMs, protected by a mutex for thread-safe access.
-static GLOBAL_VM_LIST: Mutex<VMList> = Mutex::new(VMList::new());
+static GLOBAL_VM_LIST: SpinNoPreempt<VMList> = SpinNoPreempt::new(VMList::new());
 
 /// Adds a VM to the global VM list.
 ///

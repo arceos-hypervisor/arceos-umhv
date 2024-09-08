@@ -40,3 +40,20 @@ fn main() {
 
     unreachable!("VMM start failed")
 }
+
+#[no_mangle]
+fn main_secondary() {
+    info!("Starting virtualization on secondary core...");
+
+    // Init hardware virtualization support in each core.
+    // Note: This is awkward because we need to find a proper place to call this on each core.
+    let percpu = unsafe { AXVM_PER_CPU.current_ref_mut_raw() };
+    percpu.init(1).expect("Failed to initialize percpu state");
+    percpu
+        .hardware_enable()
+        .expect("Failed to enable virtualization");
+
+    while !vmm::is_init_ok() {
+        core::hint::spin_loop();
+    }
+}

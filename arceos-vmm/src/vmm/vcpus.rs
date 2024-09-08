@@ -1,19 +1,20 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
-use spin::Mutex;
-
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
 use axvcpu::AxVCpuExitReason;
 
 use crate::task::TaskExt;
+use crate::task::KERNEL_STACK_SIZE;
 use crate::vmm::VMRef;
-
-const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
 /// A global static mutex-protected BTreeMap that holds the wait queues for vCPUs
 /// associated with their respective VMs, identified by their VM IDs.
-static VM_VCPU_TASK_WAIT_QUEUE: Mutex<BTreeMap<usize, VMVcpus>> = Mutex::new(BTreeMap::new());
+static mut VM_VCPU_TASK_WAIT_QUEUE: BTreeMap<usize, VMVcpus> = BTreeMap::new();
+
+pub fn get_vm_vcpus(vm_id: usize) -> &'static VMVcpus {
+    unsafe { VM_VCPU_TASK_WAIT_QUEUE.get(&vm_id).unwrap() }
+}
 
 /// A structure representing the vCPUs of a specific VM, including a wait queue
 /// and a list of tasks associated with the vCPUs.
@@ -52,6 +53,10 @@ impl VMVcpus {
     fn add_vcpu_task(&mut self, vcpu_task: AxTaskRef) {
         self.vcpu_task_list.push(vcpu_task)
     }
+
+    pub fn notify_all_vcpus(&self) {
+        self.wait_queue.notify_all(true)
+    }
 }
 
 /// Blocks the current thread until it is explicitly woken up, using the wait queue
@@ -61,12 +66,7 @@ impl VMVcpus {
 ///
 /// * `vm_id` - The ID of the VM whose vCPU wait queue is used to block the current thread.
 fn wait(vm_id: usize) {
-    VM_VCPU_TASK_WAIT_QUEUE
-        .lock()
-        .get(&vm_id)
-        .unwrap()
-        .wait_queue
-        .wait();
+    get_vm_vcpus(vm_id).wait_queue.wait()
 }
 
 /// Blocks the current thread until the provided condition is met, using the wait queue
@@ -80,12 +80,7 @@ fn wait_for<F>(vm_id: usize, condition: F)
 where
     F: Fn() -> bool,
 {
-    VM_VCPU_TASK_WAIT_QUEUE
-        .lock()
-        .get(&vm_id)
-        .unwrap()
-        .wait_queue
-        .wait_until(condition);
+    get_vm_vcpus(vm_id).wait_queue.wait_until(condition)
 }
 
 /// Sets up the vCPUs for a given VM by spawing `axtask` for each vCPU,
@@ -98,9 +93,9 @@ pub fn setup_vm_vcpus(vm: VMRef) {
     info!("Initializing VM[{}]'s {} vcpus", vm.id(), vm.vcpu_num());
     let vm_id = vm.id();
 
-    VM_VCPU_TASK_WAIT_QUEUE
-        .lock()
-        .insert(vm_id, VMVcpus::new(vm.clone()));
+    unsafe {
+        VM_VCPU_TASK_WAIT_QUEUE.insert(vm_id, VMVcpus::new(vm.clone()));
+    }
 
     for vcpu in vm.vcpu_list() {
         info!("Spawning task for Vcpu[{}]", vcpu.id());
@@ -121,30 +116,39 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                 loop {
                     match vm.run_vcpu(vcpu_id) {
                         // match vcpu.run() {
-                        Ok(exit_reason) => match exit_reason {
-                            AxVCpuExitReason::Hypercall { nr, args } => {
-                                debug!("Hypercall [{}] args {:x?}", nr, args);
+                        Ok(exit_reason) => {
+                            debug!(
+                                "VM[{}] run VCpu[{}] get exit reason {:?}",
+                                vm_id, vcpu_id, exit_reason
+                            );
+                            match exit_reason {
+                                AxVCpuExitReason::Hypercall { nr, args } => {
+                                    debug!("Hypercall [{}] args {:x?}", nr, args);
+                                }
+                                AxVCpuExitReason::FailEntry {
+                                    hardware_entry_failure_reason,
+                                } => {
+                                    warn!(
+                                        "VM[{}] VCpu[{}] run failed with exit code {}",
+                                        vm_id, vcpu_id, hardware_entry_failure_reason
+                                    );
+                                }
+                                AxVCpuExitReason::ExternalInterrupt { vector } => {
+                                    debug!(
+                                        "VM[{}] run VCpu[{}] get irq {}",
+                                        vm_id, vcpu_id, vector
+                                    );
+                                }
+                                AxVCpuExitReason::Halt => {
+                                    debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
+                                    wait(vm_id)
+                                }
+                                AxVCpuExitReason::Nothing => {}
+                                _ => {
+                                    warn!("Unhandled VM-Exit");
+                                }
                             }
-                            AxVCpuExitReason::FailEntry {
-                                hardware_entry_failure_reason,
-                            } => {
-                                warn!(
-                                    "VM[{}] VCpu[{}] run failed with exit code {}",
-                                    vm_id, vcpu_id, hardware_entry_failure_reason
-                                );
-                            }
-                            AxVCpuExitReason::ExternalInterrupt { vector } => {
-                                debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
-                            }
-                            AxVCpuExitReason::Halt => {
-                                debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
-                                wait(vm_id)
-                            }
-                            AxVCpuExitReason::Nothing => {}
-                            _ => {
-                                warn!("Unhandled VM-Exit");
-                            }
-                        },
+                        }
                         Err(err) => {
                             warn!("VM[{}] run VCpu[{}] get error {:?}", vm_id, vcpu_id, err);
                             wait(vm_id)
@@ -152,17 +156,19 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                     }
                 }
             },
-            format!("VCpu[{}]", vcpu.id()),
+            format!("VM[{}]-vCpu[{}]", vm_id, vcpu.id()),
             KERNEL_STACK_SIZE,
+            vcpu.phys_cpu_set(),
         );
 
         task.init_task_ext(TaskExt::new(vm.clone(), vcpu.clone()));
         let task_ref = axtask::spawn_task(task);
 
-        VM_VCPU_TASK_WAIT_QUEUE
-            .lock()
-            .get_mut(&vm_id)
-            .unwrap()
-            .add_vcpu_task(task_ref);
+        unsafe {
+            VM_VCPU_TASK_WAIT_QUEUE
+                .get_mut(&vm_id)
+                .unwrap()
+                .add_vcpu_task(task_ref);
+        }
     }
 }

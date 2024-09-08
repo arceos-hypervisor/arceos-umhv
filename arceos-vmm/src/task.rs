@@ -2,6 +2,8 @@ use axvm::{AxVCpuRef, AxVMRef};
 
 use crate::hal::AxVMHalImpl;
 
+pub const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
+
 /// Task extended data for the monolithic kernel.
 pub struct TaskExt {
     /// The VM.
