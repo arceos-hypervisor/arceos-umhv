@@ -135,6 +135,20 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                             }
                             AxVCpuExitReason::ExternalInterrupt { vector } => {
                                 debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                                /*
+                                if irq_belong_host {
+                                    // TODO: handle host irq
+                                } else {
+                                    if !vm.int_inject(vector) {
+                                        // 遍历 当前pe运行的所有vpe，通过这些vpe找到他们的vm，判断这些vm是否需要注入中断
+                                        let vm = find_vm_need_inject(vector);
+                                        if !vm.int_inject(vector) {
+                                            warn!("VM[{}] run VCpu[{}] get irq {} but no vm need inject", vm_id, vcpu_id, vector);
+                                        }
+                                    }
+                                }
+                                */
+                                
                             }
                             AxVCpuExitReason::Halt => {
                                 debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
@@ -166,3 +180,16 @@ pub fn setup_vm_vcpus(vm: VMRef) {
             .add_vcpu_task(task_ref);
     }
 }
+
+/*
+use vcpu_if::VcpuIf;
+struct VcpuIfImpl;
+
+#[crate_interface::impl_interface]
+impl VcpuIf for VcpuIfImpl {
+    fn current_vcpu_id(&self) -> usize {
+        axtask::current().task_ext().vcpu.id()
+    }
+
+}
+*/
