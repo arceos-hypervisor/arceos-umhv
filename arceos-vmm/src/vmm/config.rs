@@ -12,10 +12,10 @@ mod config {
             // core::include_str!("../../configs/nimbos-x86_64.toml"),
             #[cfg(target_arch = "x86_64")]
             core::include_str!("../../configs/arceos-x86_64.toml"),
-            // #[cfg(target_arch = "aarch64")]
-            // core::include_str!("../../configs/nimbos-aarch64.toml"),
             #[cfg(target_arch = "aarch64")]
-            core::include_str!("../../configs/arceos-aarch64.toml"),
+            core::include_str!("../../configs/nimbos-aarch64.toml"),
+            // #[cfg(target_arch = "aarch64")]
+            // core::include_str!("../../configs/arceos-aarch64.toml"),
             // #[cfg(target_arch = "riscv64")]
             // core::include_str!("../../configs/nimbos-riscv64.toml"),
             #[cfg(target_arch = "riscv64")]
