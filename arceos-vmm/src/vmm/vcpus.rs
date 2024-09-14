@@ -8,6 +8,7 @@ use axvcpu::AxVCpuExitReason;
 
 use crate::task::TaskExt;
 use crate::vmm::VMRef;
+use crate::vmm::timers::{register_timer, VmmTimerEvent, check_events, scheduler_next_event};
 
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
@@ -141,6 +142,16 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                                 wait(vm_id)
                             }
                             AxVCpuExitReason::Nothing => {}
+                            AxVCpuExitReason::SetTimer { time, callback} => {
+                                register_timer(
+                                    time,
+                                    VmmTimerEvent::new(callback),
+                                );
+                            }
+                            AxVCpuExitReason::TimerIrq => {
+                                check_events();
+                                scheduler_next_event();
+                            }
                             _ => {
                                 warn!("Unhandled VM-Exit");
                             }

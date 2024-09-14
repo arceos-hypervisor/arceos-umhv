@@ -2,6 +2,7 @@ mod config;
 mod images;
 mod vcpus;
 mod vm_list;
+mod timers;
 
 use crate::hal::AxVMHalImpl;
 use axvm::{AxVM, AxVMRef};
@@ -12,6 +13,9 @@ pub type VMRef = AxVMRef<AxVMHalImpl>;
 pub fn init() {
     // Initialize guest VM according to config file.
     config::init_guest_vms();
+
+    // Initialize timer list
+    timers::init();
 
     // Setup vcpus, spawn axtask for VCpu.
     info!("Setting up vcpus...");
