@@ -6,7 +6,6 @@ use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
-// TODO:complete VmmTimerEvent: including guest owmer, ...
 pub struct VmmTimerEvent {
     task: CurrentTask,
     timer_callback: Box<dyn FnOnce(TimeValue) + Send + 'static>,
@@ -52,7 +51,7 @@ where
 }
 
 pub fn check_events() {
-    info!("1");
+    // info!("1");
     loop {
         let now = axhal::time::wall_time();
         let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
@@ -69,7 +68,9 @@ pub fn check_events() {
 pub fn scheduler_next_event() {
     // info!("set deadline!!!");
     let now_ns = axhal::time::monotonic_time_nanos();
-    let deadline = now_ns + axhal::time::NANOS_PER_SEC/axconfig::TIMER_FREQUENCY as u64;
+    // let deadline = now_ns + axhal::time::NANOS_PER_SEC/axconfig::TIMER_FREQUENCY as u64;
+    let deadline = now_ns + 1000;
+    // info!("now_ns:{},deadline:{}",now_ns,deadline);
     axhal::time::set_oneshot_timer(deadline);
 }
 
@@ -77,11 +78,16 @@ pub fn init() {
     let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
     timer_list.init_once(SpinNoIrq::new(TimerList::new()));
 
-    // TODO:register arceos timer interrupt
-    // register_timer(
-    //     0,
-    //     VmmTimerEvent::new(|_now| unsafe {
-    //         axhal::irq::handler_irq(TIMER_IRQ_NUM);
-    //     }),
-    // );
+    // axhal::irq::register_handler(axhal::time::TIMER_IRQ_NUM, || {
+    //     // info!("TIMER_IRQ_NUM handler!!!");
+    //     // unsafe {
+    //     //     sie::clear_stimer();
+    //     // }
+
+    //     check_events();
+    //     scheduler_next_event();
+    //     // unsafe {
+    //     //     sie::set_stimer();
+    //     // }
+    // });
 }
