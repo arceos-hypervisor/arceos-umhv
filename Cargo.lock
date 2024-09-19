@@ -71,6 +71,7 @@ dependencies = [
  "page_table_multiarch",
  "percpu",
  "raw-cpuid 11.1.0",
+ "riscv 0.6.0",
  "spin",
  "timer_list",
  "x86",
@@ -1011,6 +1012,7 @@ version = "0.1.0"
 dependencies = [
  "axaddrspace",
  "axerrno",
+ "axhal",
  "axvcpu 0.1.0",
  "bit_field",
  "bitflags 2.6.0",

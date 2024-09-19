@@ -8,8 +8,8 @@ use axvcpu::AxVCpuExitReason;
 
 use crate::task::TaskExt;
 use crate::vmm::VMRef;
-use crate::vmm::timers::{register_timer, VmmTimerEvent, check_events, scheduler_next_event};
-
+use crate::vmm::timers::{register_timer, TimerEventFn, check_events, scheduler_next_event};
+use riscv::register::{sie,hvip};
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
 /// A global static mutex-protected BTreeMap that holds the wait queues for vCPUs
@@ -143,9 +143,10 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                             }
                             AxVCpuExitReason::Nothing => {}
                             AxVCpuExitReason::SetTimer { time, callback} => {
+                                // info!("register");
                                 register_timer(
                                     time,
-                                    VmmTimerEvent::new(callback),
+                                    TimerEventFn::new(callback),
                                 );
                             }
                             AxVCpuExitReason::TimerIrq => {

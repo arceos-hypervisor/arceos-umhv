@@ -11,32 +11,48 @@ const TICKS_PER_SEC: u64 = 100;
 const NANOS_PER_SEC: u64 = 1_000_000_000;
 const PERIODIC_INTERVAL_NANOS: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
 
-// TODO:complete TimerEventFn: including guest owmer, ...
-pub struct TimerEventFn(Box<dyn FnOnce(TimeValue) + Send + 'static>);
 
-impl TimerEventFn {
-    /// Constructs a new [`TimerEventFn`] from a closure.
+pub struct VmmTimerEvent {
+    task: CurrentTask,
+    timer_callback: Box<dyn FnOnce(TimeValue) + Send + 'static>,
+}
+
+
+impl VmmTimerEvent {
+    /// Constructs a new [`VmmTimerEvent`] from a closure.
     pub fn new<F>(f: F) -> Self
     where
         F: FnOnce(TimeValue) + Send + 'static,
     {
-        Self(Box::new(f))
+        Self {
+            task: axtask::current(),
+            timer_callback: Box::new(f),
+        }
     }
 }
 
-impl TimerEvent for TimerEventFn {
+impl TimerEvent for VmmTimerEvent {
     fn callback(self, now: TimeValue) {
-        (self.0)(now)
+        (self.timer_callback)(now)
     }
 }
 
 #[percpu::def_percpu]
-static TIMER_LIST: LazyInit<SpinNoIrq<TimerList<TimerEventFn>>> = LazyInit::new();
+static TIMER_LIST: LazyInit<SpinNoIrq<TimerList<VmmTimerEvent>>> = LazyInit::new();
 
-pub fn register_timer(deadline: u64, handler: TimerEventFn) {
+// deadline: ns
+pub fn register_timer(deadline: u64, handler: VmmTimerEvent) {
     let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
     let mut timers = timer_list.lock();
-    timers.set(TimeValue::from_nanos(deadline), handler);
+    timers.set(TimeValue::from_nanos(deadline as u64), handler);
+}
+
+pub fn cancel_timer<F>(condition: F)
+where
+    F: Fn(&VmmTimerEvent) -> bool, {
+    let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
+    let mut timers = timer_list.lock();
+    timers.cancel(condition);
 }
 
 pub fn check_events() {
