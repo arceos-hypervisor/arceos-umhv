@@ -84,12 +84,8 @@ fn open_output_file() -> fs::File {
 fn new_guest_img() -> io::Result<()> {
     let mut f = File::create("./guest.S").unwrap();
     // let guest = std::env::var("GUEST").unwrap();
-    let mut img_path = String::new();
-    let mut dtb_path = String::new();
-
-    // img_path = "/home/debin/Codes/arceos/vmm-app-rk3588/linux-aarch64.bin".to_string();
-    img_path = "../linux-aarch64.bin".to_string();
-    dtb_path = "../rk3588.dtb".to_string();
+    let img_path = "../linux-aarch64.bin".to_string();
+    let dtb_path = "../rk3588.dtb".to_string();
 
     writeln!(
         f,
@@ -109,12 +105,10 @@ guestkernel_end:
 guestdtb_start:
     .incbin "{}"
 guestdtb_end:"#,
-    img_path,
-    dtb_path
+        img_path, dtb_path
     )?;
     Ok(())
 }
-
 
 fn main() -> io::Result<()> {
     let config_files = get_configs();

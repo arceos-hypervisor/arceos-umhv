@@ -53,7 +53,6 @@ pub fn load_vm_images_buffer(
             );
         }
 
-        
         // region.copy_from_slice(&buffer[buffer_pos..buffer_pos + bytes_to_write]);
 
         // 更新缓冲区的位置
