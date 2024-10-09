@@ -1,25 +1,7 @@
-use alloc::string::String;
-
-// use std::fs::File;
-
-use axerrno::{ax_err, ax_err_type, AxResult};
+use axerrno::AxResult;
 use memory_addr::VirtAddr;
 
-use axvm::config::AxVMCrateConfig;
-
 use crate::vmm::VMRef;
-
-pub fn write_buffer_to_image_load_regions(
-    buffer_kernel: &[u8],
-    buffer_dtb: &[u8],
-    config: AxVMCrateConfig,
-    vm: VMRef,
-) -> AxResult {
-    // let _ = load_vm_images_buffer(buffer_kernel, config.kernel_load_addr, vm.clone());
-    // let _ = load_vm_images_buffer(buffer_dtb, config.dtb_load_addr.expect("6666"), vm.clone());
-
-    Ok(())
-}
 
 fn copy_data(src: *mut u8, dst: *mut u8, size: usize) {
     unsafe {
