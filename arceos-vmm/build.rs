@@ -28,6 +28,8 @@ use std::{
     path::PathBuf,
 };
 
+use std::fs::File;
+
 /// A configuration file that has been read from disk.
 struct ConfigFile {
     /// The path to the configuration file.
@@ -79,6 +81,41 @@ fn open_output_file() -> fs::File {
         .unwrap()
 }
 
+fn new_guest_img() -> io::Result<()> {
+    let mut f = File::create("./guest.S").unwrap();
+    // let guest = std::env::var("GUEST").unwrap();
+    let mut img_path = String::new();
+    let mut dtb_path = String::new();
+
+    // img_path = "/home/debin/Codes/arceos/vmm-app-rk3588/linux-aarch64.bin".to_string();
+    img_path = "../linux-aarch64.bin".to_string();
+    dtb_path = "../rk3588.dtb".to_string();
+
+    writeln!(
+        f,
+        r#"
+    .section .data
+    .global guestkernel_start
+    .global guestkernel_end
+    .align 16
+guestkernel_start:
+    .incbin "{}"
+guestkernel_end:
+
+  .section .data
+    .global guestdtb_start
+    .global guestdtb_end
+    .align 16
+guestdtb_start:
+    .incbin "{}"
+guestdtb_end:"#,
+    img_path,
+    dtb_path
+    )?;
+    Ok(())
+}
+
+
 fn main() -> io::Result<()> {
     let config_files = get_configs();
     let mut output_file = open_output_file();
@@ -111,5 +148,7 @@ fn main() -> io::Result<()> {
         }
     }
     writeln!(output_file, "}}")?;
+
+    new_guest_img().unwrap();
     Ok(())
 }

@@ -16,7 +16,7 @@ axtask = { workspace = true, features = ["multitask"] }
 axstd = { workspace = true, features = [
     "alloc",
     "paging",
-    "fs",
+    # "fs",
     # "irq",
     "hv",
     "multitask",

@@ -1,6 +1,6 @@
 OUTPUT_ARCH(aarch64)
 
-BASE_ADDRESS = 0x40080000;
+BASE_ADDRESS = 0x480000;
 
 ENTRY(_start)
 SECTIONS
@@ -30,7 +30,9 @@ SECTIONS
         *(.data.boot_page_table)
         . = ALIGN(4K);
         *(.guestdata.kernel)
-        . = ALIGN(4K);
+		. = ALIGN(4K);
+		 *(.guestdata.dtb)
+		. = ALIGN(4K);
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)

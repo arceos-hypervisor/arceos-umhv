@@ -1,0 +1,43 @@
+id = 1
+name = "linux"
+vm_type = 1
+cpu_set = 2
+cpu_num = 1
+entry_point = 0x1008_0000
+kernel_path = "linux-aarch64.bin"
+kernel_load_addr = 0x1008_0000
+dtb_load_addr = 0x1000_0000
+# ramdisk_path = ""
+# ramdisk_load_addr = 0
+# disk_path = "disk.img"
+# Memory regions with format (`base_paddr`, `size`, `flags`).
+memory_regions = [
+    # [0x0, 0xc000_0000, 0x7],   # Low RAM		    16M 0b00111 R|W|EXECUTE
+    # [0x800_0000, 0x10_000, 0x17],     # intc 		    4K  0b10111 R|W|DEVICE
+    # [0x801_0000, 0x10_000, 0x17],     # intc 		    4K  0b10111 R|W|DEVICE
+    # [0x900_0000, 0x1000, 0x17],       # pl011 (Uart)	4K  0b10111 R|W|DEVICE
+    # [0x901_0000, 0x1000, 0x17],       # pl031 (timer)	4K  0b10111 R|W|DEVICE
+    # [0xfed0_0000, 0x1000, 0x17],      # HPET 		    4K  0b10111 R|W|DEVICE
+    # [0xfe600000, 0x80000,0x17], # gic-v3 gicd
+    # [0xfe680000, 0x100000,0x17], # gic-v3 gicr
+    # [0xc000_0000, 0x4000_0000, 0x17],
+    # [0x4000_0000, 0x800_0000, 0x7], # ram 128m
+    #[0x20_0000,0x820_0000, 0x7],#ram
+    [0x0,0x10_f000,0x37], # passthrough uncahed 
+    [0x11_0000,0xf_0000, 0x17], #ramoops
+    [0x10_f000,0x1000,0x17],#sram
+    [0x940_0000,0x76c00000, 0x7],#ram 3G 
+    # 940_0000 8940_0000
+    #          1008_0000 kernel load 
+    #          1000_0000 dts load 
+
+    #[0x1_f000_0000,0x1000_0000,0x7], #ram
+    [0xfb00_0000,0x200000,0x17], # gpu
+    [0xfd00_0000,0x2000000,0x17], # uart8250 UART
+    [0xfc00_0000,0x1000000,0x17], #usb
+]
+
+# Emu_devices
+# Name Base-Ipa Ipa_len Alloc-Irq Emu-Type EmuConfig
+emu_devices = [
+]

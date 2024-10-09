@@ -29,12 +29,12 @@
 #     - `GW`: Gateway IPv4 address (default is 10.0.2.2 for QEMU user netdev)
 
 # General options
-ARCH ?= x86_64
+ARCH ?= aarch64
 PLATFORM ?=
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
-V ?=
+V ?= 1
 
 # App options
 # A ?= apps/helloworld
@@ -108,7 +108,7 @@ else ifeq ($(ARCH), riscv64)
   PLATFORM_NAME ?= riscv64-qemu-virt
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
-  PLATFORM_NAME ?= aarch64-qemu-virt
+  PLATFORM_NAME ?= aarch64-rk3588j
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
@@ -177,6 +177,8 @@ ifeq ($(PLATFORM_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
+else ifeq ($(PLATFORM_NAME), aarch64-rk3588j)
+  include scripts/make/rk3588.mk
 endif
 
 build: $(OUT_DIR) $(OUT_BIN)
