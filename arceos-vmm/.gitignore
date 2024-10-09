@@ -8,9 +8,13 @@
 actual.out
 qemu.log
 rusty-tags.vi
+*.tmp_its
 
 # Visual Studio Code settings
 /.vscode
 
 # macOS system files
 .DS_Store
+
+# ramdisk.img need by rk3588
+!*ramdisk.img

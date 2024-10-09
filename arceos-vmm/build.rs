@@ -84,8 +84,8 @@ fn open_output_file() -> fs::File {
 fn new_guest_img() -> io::Result<()> {
     let mut f = File::create("./guest.S").unwrap();
     // let guest = std::env::var("GUEST").unwrap();
-    let img_path = "../linux-aarch64.bin".to_string();
-    let dtb_path = "../rk3588.dtb".to_string();
+    let img_path = "./linux-aarch64.bin".to_string();
+    let dtb_path = "./rk3588.dtb".to_string();
 
     writeln!(
         f,

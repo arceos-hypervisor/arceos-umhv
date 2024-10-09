@@ -7,14 +7,14 @@ members = ["arceos-vmm"]
 lto = true
 
 [workspace.dependencies]
-axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "d938aca" }
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "d938aca" }
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "d938aca" }
+axalloc = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "13a81ee" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "13a81ee" }
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "13a81ee" }
 axtask = { git = "https://github.com/arceos-org/arceos.git", branch = "monolithic" }
 
 axvm = { git = "https://github.com/arceos-hypervisor/axvm.git" }
 axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git" }
-axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git" }
+axaddrspace = { git = "https://github.com/luodeb/axaddrspace.git" }
 
 arm_vcpu = { git = "https://github.com/arceos-hypervisor/arm_vcpu.git" }
 x86_vcpu = { git = "https://github.com/arceos-hypervisor/x86_vcpu.git" }
@@ -25,8 +25,8 @@ riscv_vcpu = { git = "https://github.com/arceos-hypervisor/riscv_vcpu.git" }
 # (ref: https://github.com/arceos-org/arceos/blob/monolithic/modules/axtask/Cargo.toml)
 # we temporarily use [patch] here to unify the dependency versions of these modules.
 [patch."https://github.com/arceos-org/arceos.git"]
-axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "d938aca" }
-axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "d938aca" }
+axhal = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "13a81ee" }
+axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", rev = "13a81ee" }
 
 # The complexity: 
 # `axstd` depends on the `axtask` from the `arceos-hypervisor\arceos` repository when the 'multitask' feature is enabled. 

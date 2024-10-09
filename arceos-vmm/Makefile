@@ -34,7 +34,7 @@ PLATFORM ?=
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
-V ?= 1
+V ?= 
 
 # App options
 # A ?= apps/helloworld

@@ -5,6 +5,10 @@
 *.img
 *.bin
 *.elf
+*.dtb
 actual.out
 qemu.log
 rusty-tags.vi
+
+# linux-aarch64 for rk3588
+!linux-aarch64.bin
