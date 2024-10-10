@@ -47,3 +47,13 @@ jobs:
         export DISK_IMG="${{ github.workspace }}/disk-${{ matrix.arch }}.img"
         export VM_CONFIGS="$(pwd)/arceos-vmm/configs/nimbos-${{ matrix.arch }}.toml"
         make -C arceos-vmm ARCH=${{ matrix.arch }} DISK_IMG=${DISK_IMG} LOG=info BLK=y ACCEL=${ACCEL} VM_CONFIGS=${VM_CONFIGS} run
+    - name: Test remote runner
+      uses: appleboy/ssh-action@v1.1.0
+      if: matrix.arch == 'x86_64'
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: bash ~/a.sh
+    
