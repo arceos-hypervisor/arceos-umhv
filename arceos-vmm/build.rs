@@ -77,14 +77,14 @@ fn open_output_file() -> fs::File {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(&output_file)
+        .open(output_file)
         .unwrap()
 }
 
 fn read_toml_file(file_path: &str) -> io::Result<Value> {
     println!("Reading {}", file_path);
-    let contents =
-        fs::read_to_string(file_path).expect(format!("Failed to read file {}", file_path).as_str());
+    let contents = fs::read_to_string(file_path)
+        .unwrap_or_else(|_| panic!("Failed to read file {}", file_path));
     let parsed_toml: Value = contents
         .parse::<Value>()
         .expect("failed to parse config file");
@@ -96,12 +96,13 @@ fn read_toml_file(file_path: &str) -> io::Result<Value> {
 fn load_guest_img(config_toml_path: Option<Vec<OsString>>) -> io::Result<()> {
     let mut f = fs::File::create("./guest.S").unwrap();
     if let Some(config_path) = config_toml_path {
-        if let Some(guest_config) = config_path.get(0) {
+        if let Some(guest_config) = config_path.first() {
             let config =
                 read_toml_file(guest_config.to_str().expect("Path contains invalid UTF-8"))
                     .expect("failed to read config file");
             if let Some(image_location) = config.get("image_location") {
-                if image_location.to_string() == "\"memory\"".to_string() {
+                let location: &str = image_location.as_str().unwrap();
+                if location == "memory" {
                     let kernel_path = config.get("kernel_path").unwrap();
                     let dtb_incbin = if let Some(dtb_path) = config.get("dtb_path") {
                         format!("    .incbin {}", dtb_path)
@@ -128,17 +129,14 @@ fn load_guest_img(config_toml_path: Option<Vec<OsString>>) -> io::Result<()> {
                 guestdtb_end:"#,
                         kernel_path, dtb_incbin
                     )?;
+
+                    return Ok(());
                 }
-            } else {
-                writeln!(f, "")?;
             }
-        } else {
-            writeln!(f, "")?;
         }
-    } else {
-        writeln!(f, "")?;
     }
 
+    writeln!(f)?;
     Ok(())
 }
 
