@@ -92,7 +92,7 @@ fn read_toml_file(file_path: &str) -> io::Result<Value> {
 }
 
 /// load guest images from config
-/// Toml file must be provided to load from memory. 
+/// Toml file must be provided to load from memory.
 fn load_guest_img(config_toml_path: Option<Vec<OsString>>) -> io::Result<()> {
     let mut f = fs::File::create("./guest.S").unwrap();
     if let Some(config_path) = config_toml_path {
