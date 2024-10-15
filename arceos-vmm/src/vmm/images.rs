@@ -142,26 +142,6 @@ fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
         panic!("VM images is missed, add `VM_CONFIGS=configs/aarch64-linux.toml` in make command.");
     }
 
-    // // Load kernel image.
-    // load_vm_image_memory(
-    //     kernel_start_addr as *mut u8,
-    //     config.kernel_load_addr,
-    //     config.kernel_size.unwrap(),
-    //     vm.clone(),
-    // )
-    // .expect("Failed to load VM images");
-
-    // // Load DTB image
-    // if let Some(_dtb_path) = config.dtb_path {
-    //     load_vm_image_memory(
-    //         dtb_start_addr as *mut u8,
-    //         config.dtb_load_addr.unwrap(),
-    //         config.dtb_size.unwrap(),
-    //         vm.clone(),
-    //     )
-    //     .expect("Failed to load DTB images");
-    // }
-
     Ok(())
 }
 
