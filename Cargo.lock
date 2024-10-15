@@ -70,6 +70,7 @@ dependencies = [
  "percpu",
  "raw-cpuid 11.2.0",
  "spin",
+ "toml",
  "x86",
  "x86_64 0.14.12",
  "x86_vcpu",

@@ -9,9 +9,21 @@ use axvm::config::AxVMCrateConfig;
 
 use crate::vmm::VMRef;
 
+use crate::vmm::config::config;
+use alloc::vec::Vec;
+
+/// Loads the VM image files.
+pub fn load_vm_images(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
+    match config.image_location.as_deref() {
+        Some("memory") => load_vm_images_memory(config, vm),
+        _ => load_vm_images_filesystem(config, vm),
+    }
+}
+
 /// Loads the VM image files from the filesystem
 /// into the guest VM's memory space based on the VM configuration.
-pub fn load_vm_images(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
+fn load_vm_images_filesystem(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
+    info!("Loading VM images from filesystem");
     // Load kernel image.
     load_vm_image(
         config.kernel_path,
@@ -92,4 +104,73 @@ fn open_image_file(file_name: &str) -> AxResult<(File, usize)> {
         })?
         .size() as usize;
     Ok((file, file_size))
+}
+
+/// Load VM images from memory (guest.S)
+/// into the guest VM's memory space based on the VM configuration.
+fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
+    info!("Loading VM images from memory");
+
+    // Load DTB image
+    if let Some(buffer) = config::load_dtb() {
+        load_vm_image_memory(
+            Vec::from(buffer).as_mut_ptr(),
+            config.dtb_load_addr.unwrap(),
+            buffer.len(),
+            vm.clone(),
+        )
+        .expect("Failed to load DTB images");
+    }
+
+    if let Some(buffer) = config::load_kernel() {
+        // Load kernel image.
+        load_vm_image_memory(
+            Vec::from(buffer).as_mut_ptr(),
+            config.kernel_load_addr,
+            buffer.len(),
+            vm.clone(),
+        )
+        .expect("Failed to load VM images");
+    } else {
+        panic!("VM images is missed, add `VM_CONFIGS=configs/aarch64-linux.toml` in make command.");
+    }
+
+    Ok(())
+}
+
+fn load_vm_image_memory(
+    buffer: *mut u8,
+    load_addr: usize,
+    image_size: usize,
+    vm: VMRef,
+) -> AxResult {
+    let mut buffer_pos = 0;
+    let image_load_gpa = VirtAddr::from(load_addr);
+
+    let image_load_regions = vm.get_image_load_region(image_load_gpa, image_size)?;
+
+    for region in image_load_regions {
+        let region_len = region.len();
+        let bytes_to_write = region_len.min(image_size - buffer_pos);
+
+        // copy data from .tbdata section
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                buffer.offset(buffer_pos as isize),
+                (&mut region[0]) as *mut u8,
+                bytes_to_write,
+            );
+        }
+
+        // Update the position of the buffer.
+        buffer_pos += bytes_to_write;
+
+        // If the buffer is fully written, exit the loop.
+        if buffer_pos >= image_size {
+            debug!("copy size: {}", bytes_to_write);
+            break;
+        }
+    }
+
+    Ok(())
 }
