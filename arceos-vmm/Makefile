@@ -81,10 +81,12 @@ else ifneq ($(PLATFORM),)
   ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
     # builtin platform
     PLATFORM_NAME := $(PLATFORM)
+    VM_CONFIGS ?= configs/$(PLATFORM).toml
     _arch := $(word 1,$(subst -, ,$(PLATFORM)))
   else ifneq ($(wildcard $(PLATFORM)),)
     # custom platform, read the "platform" field from the toml file
     PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
+    VM_CONFIGS ?= $(PLATFORM)
     _arch := $(shell cat $(PLATFORM) | sed -n 's/^arch = "\([a-z0-9A-Z_\-]*\)"/\1/p')
   else
     $(error "PLATFORM" must be one of "$(builtin_platforms)" or a valid path to a toml file)
@@ -177,6 +179,8 @@ ifeq ($(PLATFORM_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
+else ifeq ($(PLATFORM_NAME), aarch64-rk3588j)
+  include scripts/make/rk3588.mk
 endif
 
 build: $(OUT_DIR) $(OUT_BIN)

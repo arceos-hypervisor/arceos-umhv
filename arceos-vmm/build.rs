@@ -28,6 +28,8 @@ use std::{
     path::PathBuf,
 };
 
+use toml::Value;
+
 /// A configuration file that has been read from disk.
 struct ConfigFile {
     /// The path to the configuration file.
@@ -79,7 +81,74 @@ fn open_output_file() -> fs::File {
         .unwrap()
 }
 
+fn read_toml_file(file_path: &str) -> io::Result<Value> {
+    println!("Reading {}", file_path);
+    let contents =
+        fs::read_to_string(file_path).expect(format!("Failed to read file {}", file_path).as_str());
+    let parsed_toml: Value = contents
+        .parse::<Value>()
+        .expect("failed to parse config file");
+    Ok(parsed_toml)
+}
+
+/// load guest images from config
+/// Toml file must be provided to load from memory. 
+fn load_guest_img(config_toml_path: Option<Vec<OsString>>) -> io::Result<()> {
+    let mut f = fs::File::create("./guest.S").unwrap();
+    if let Some(config_path) = config_toml_path {
+        if let Some(guest_config) = config_path.get(0) {
+            let config =
+                read_toml_file(guest_config.to_str().expect("Path contains invalid UTF-8"))
+                    .expect("failed to read config file");
+            if let Some(image_location) = config.get("image_location") {
+                if image_location.to_string() == "\"memory\"".to_string() {
+                    let kernel_path = config.get("kernel_path").unwrap();
+                    let dtb_incbin = if let Some(dtb_path) = config.get("dtb_path") {
+                        format!("    .incbin {}", dtb_path)
+                    } else {
+                        "".to_string()
+                    };
+                    writeln!(
+                        f,
+                        r#"
+                    .section .data
+                    .global guestkernel_start
+                    .global guestkernel_end
+                    .align 16
+                guestkernel_start:
+                    .incbin {}
+                guestkernel_end:
+                
+                  .section .data
+                    .global guestdtb_start
+                    .global guestdtb_end
+                    .align 16
+                guestdtb_start:
+                    {}
+                guestdtb_end:"#,
+                        kernel_path, dtb_incbin
+                    )?;
+                }
+            } else {
+                writeln!(f, "")?;
+            }
+        } else {
+            writeln!(f, "")?;
+        }
+    } else {
+        writeln!(f, "")?;
+    }
+
+    Ok(())
+}
+
 fn main() -> io::Result<()> {
+    let platform = env::var("AX_PLATFORM").unwrap_or("".to_string());
+    let platform_family = env::var("AX_PLATFORM").unwrap_or("".to_string());
+    let config_toml_path = get_config_paths();
+    println!("cargo:rustc-cfg=platform=\"{}\"", platform);
+    println!("cargo:rustc-cfg=platform_family=\"{}\"", platform_family);
+
     let config_files = get_configs();
     let mut output_file = open_output_file();
 
@@ -111,5 +180,9 @@ fn main() -> io::Result<()> {
         }
     }
     writeln!(output_file, "}}")?;
+
+    // load kernel and dtb images
+    load_guest_img(config_toml_path)?;
+
     Ok(())
 }

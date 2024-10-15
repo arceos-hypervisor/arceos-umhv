@@ -2,6 +2,8 @@ use axvm::config::{AxVMConfig, AxVMCrateConfig};
 
 use crate::vmm::{images::load_vm_images, vm_list::push_vm, VM};
 
+core::arch::global_asm!(include_str!("../../guest.S"));
+
 mod config {
     use alloc::vec::Vec;
 
@@ -14,6 +16,8 @@ mod config {
             core::include_str!("../../configs/arceos-x86_64.toml"),
             // #[cfg(target_arch = "aarch64")]
             // core::include_str!("../../configs/nimbos-aarch64.toml"),
+            // #[cfg(target_arch = "aarch64")]
+            // core::include_str!("../../configs/linux-rk3588-aarch64.toml"),
             #[cfg(target_arch = "aarch64")]
             core::include_str!("../../configs/arceos-aarch64.toml"),
             // #[cfg(target_arch = "riscv64")]
