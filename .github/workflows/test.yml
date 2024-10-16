@@ -56,4 +56,6 @@ jobs:
         password: ${{ secrets.PASSWORD }}
         port: ${{ secrets.PORT }}
         script: bash ~/a.sh
-    
+    - name: Test qemu runner
+      run: |
+        qemu-system-x86_64 -m 128M -smp 1 -machine q35 -kernel /home/runner/work/arceos-umhv/arceos-umhv/arceos-vmm/arceos-vmm_x86_64-qemu-q35.elf -device virtio-blk-pci,drive=disk0 -drive id=disk0,if=none,format=raw,file=/home/runner/work/arceos-umhv/arceos-umhv/disk-x86_64.img -nographic -cpu Cascadelake-Server,vmx=on -accel kvm
