@@ -47,7 +47,17 @@ jobs:
         export DISK_IMG="${{ github.workspace }}/disk-${{ matrix.arch }}.img"
         export VM_CONFIGS="$(pwd)/arceos-vmm/configs/nimbos-${{ matrix.arch }}.toml"
         make -C arceos-vmm ARCH=${{ matrix.arch }} DISK_IMG=${DISK_IMG} LOG=info BLK=y ACCEL=${ACCEL} VM_CONFIGS=${VM_CONFIGS} run
-    - name: Test remote runner
+    - name: Copy x86_64 files to remote runner
+      uses: appleboy/scp-action@v0.1.7
+      if: matrix.arch == 'x86_64'
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        source: '${{ github.workspace }}/disk-x86_64.img'
+        target: '~/runner/'
+    - name: Running on remote runner
       uses: appleboy/ssh-action@v1.1.0
       if: matrix.arch == 'x86_64'
       with:
@@ -55,7 +65,8 @@ jobs:
         username: ${{ secrets.USERNAME }}
         password: ${{ secrets.PASSWORD }}
         port: ${{ secrets.PORT }}
-        script: bash ~/a.sh
-    - name: Test qemu runner
-      run: |
-        qemu-system-x86_64 -m 128M -smp 1 -machine q35 -kernel /home/runner/work/arceos-umhv/arceos-umhv/arceos-vmm/arceos-vmm_x86_64-qemu-q35.elf -device virtio-blk-pci,drive=disk0 -drive id=disk0,if=none,format=raw,file=/home/runner/work/arceos-umhv/arceos-umhv/disk-x86_64.img -nographic -cpu Cascadelake-Server,vmx=on -accel kvm
+        script: |
+          export REPO_NAME=${{ github.event.repository.name }}
+          rf -rf ~/runner/${REPO_NAME}
+          git clone ${{ github.repositoryUrl }} ~/runner/${REPO_NAME}
+          cd ~/runner/${REPO_NAME} && make -C arceos-vmm ARCH=x86_64 DISK_IMG=~/runner/disk-x86_64.img LOG=info BLK=y ACCEL=y VM_CONFIGS=$(pwd)/arceos-vmm/configs/nimbos-x86_64.toml run
