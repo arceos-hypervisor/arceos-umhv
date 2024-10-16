@@ -4,7 +4,7 @@ use crate::vmm::{images::load_vm_images, vm_list::push_vm, VM};
 
 core::arch::global_asm!(include_str!("../../guest.S"));
 
-mod config {
+pub mod config {
     use alloc::vec::Vec;
 
     /// Default static VM configs. Used when no VM config is provided.

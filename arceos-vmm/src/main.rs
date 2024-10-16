@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(linkage)]
 
 #[macro_use]
 extern crate log;

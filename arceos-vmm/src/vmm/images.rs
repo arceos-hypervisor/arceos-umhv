@@ -9,15 +9,8 @@ use axvm::config::AxVMCrateConfig;
 
 use crate::vmm::VMRef;
 
-// Linkage symbols from the guest.S.
-extern "C" {
-    #[linkage = "extern_weak"]
-    static guestdtb_start: Option<unsafe extern "C" fn()>;
-    // fn guestdtb_end();
-    #[linkage = "extern_weak"]
-    static guestkernel_start: Option<unsafe extern "C" fn()>;
-    // fn guestkernel_end();
-}
+use crate::vmm::config::config;
+use alloc::vec::Vec;
 
 /// Loads the VM image files.
 pub fn load_vm_images(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
@@ -114,27 +107,23 @@ fn open_image_file(file_name: &str) -> AxResult<(File, usize)> {
 fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     info!("Loading VM images from memory");
 
-    if let Some(value) = unsafe { guestdtb_start } {
-        let dtb_start_addr = value as usize;
-
-        // Load DTB image
-        if let Some(_dtb_path) = config.dtb_path {
-            load_vm_image_memory(
-                dtb_start_addr as *mut u8,
-                config.dtb_load_addr.unwrap(),
-                config.dtb_size.unwrap(),
-                vm.clone(),
-            )
-            .expect("Failed to load DTB images");
-        }
+    // Load DTB image
+    if let Some(buffer) = config::load_dtb() {
+        load_vm_image_memory(
+            Vec::from(buffer).as_mut_ptr(),
+            config.dtb_load_addr.unwrap(),
+            buffer.len(),
+            vm.clone(),
+        )
+        .expect("Failed to load DTB images");
     }
-    if let Some(value) = unsafe { guestkernel_start } {
-        let kernel_start_addr = value as usize;
+
+    if let Some(buffer) = config::load_kernel() {
         // Load kernel image.
         load_vm_image_memory(
-            kernel_start_addr as *mut u8,
+            Vec::from(buffer).as_mut_ptr(),
             config.kernel_load_addr,
-            config.kernel_size.unwrap(),
+            buffer.len(),
             vm.clone(),
         )
         .expect("Failed to load VM images");

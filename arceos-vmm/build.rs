@@ -93,8 +93,10 @@ fn read_toml_file(file_path: &str) -> io::Result<Value> {
 
 /// load guest images from config
 /// Toml file must be provided to load from memory.
-fn load_guest_img(config_toml_path: Option<Vec<OsString>>) -> io::Result<()> {
-    let mut f = fs::File::create("./guest.S").unwrap();
+fn load_guest_img(
+    mut out_file: fs::File,
+    config_toml_path: Option<Vec<OsString>>,
+) -> io::Result<()> {
     if let Some(config_path) = config_toml_path {
         // Started from the first config item by default.
         if let Some(guest_config) = config_path.first() {
@@ -106,40 +108,45 @@ fn load_guest_img(config_toml_path: Option<Vec<OsString>>) -> io::Result<()> {
                 if location == "memory" {
                     let kernel_path = config.get("kernel_path").unwrap();
                     // If have dtb_path, include it.
-                    let dtb_incbin = if let Some(dtb_path) = config.get("dtb_path") {
-                        format!("    .incbin {}", dtb_path)
-                    } else {
-                        "".to_string()
-                    };
                     writeln!(
-                        f,
-                        r#"
-                    .section .data
-                    .global guestkernel_start
-                    .global guestkernel_end
-                    .align 16
-                guestkernel_start:
-                    .incbin {}
-                guestkernel_end:
-                
-                  .section .data
-                    .global guestdtb_start
-                    .global guestdtb_end
-                    .align 16
-                guestdtb_start:
-                    {}
-                guestdtb_end:"#,
-                        kernel_path, dtb_incbin
+                        out_file,
+                        r#"pub fn load_dtb() -> Option<&'static [u8]> {{ "#
                     )?;
+                    if let Some(dtb_path) = config.get("dtb_path") {
+                        // 使用 include_bytes! 加载数据
+                        writeln!(out_file, r#"include_bytes!({})"#, dtb_path)?;
+                        writeln!(out_file, r#".map(|bytes| bytes as &'static [u8])"#)?;
+                    } else {
+                        writeln!(out_file, r#"    None"#)?;
+                    };
+
+                    writeln!(out_file, r#"}}"#)?;
+
+                    writeln!(
+                        out_file,
+                        r#"pub fn load_kernel() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    // 使用 include_bytes! 加载数据
+                    writeln!(out_file, r#"    Some(include_bytes!({}))"#, kernel_path)?;
+                    writeln!(out_file, r#"}}"#)?;
 
                     return Ok(());
                 }
             }
         }
     }
-
-    // Instead of loading the image from memory, write an empty file.
-    writeln!(f)?;
+    writeln!(
+        out_file,
+        r#"
+pub fn load_dtb() -> Option<&'static [u8]> {{ 
+    None
+}}
+    
+pub fn load_kernel() -> Option<&'static [u8]> {{ 
+    None
+}}
+"#
+    )?;
     Ok(())
 }
 
@@ -183,7 +190,7 @@ fn main() -> io::Result<()> {
     writeln!(output_file, "}}")?;
 
     // load kernel and dtb images
-    load_guest_img(config_toml_path)?;
+    load_guest_img(output_file, config_toml_path)?;
 
     Ok(())
 }
