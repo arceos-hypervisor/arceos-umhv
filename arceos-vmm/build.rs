@@ -117,8 +117,10 @@ fn generate_load_guest_img(
             if let Some(image_location) = config.get("image_location") {
                 let location: &str = image_location.as_str().unwrap();
                 if location == "memory" {
-                    let kernel_path =
-                        convert_to_absolute("configs",config.get("kernel_path").unwrap().as_str().unwrap());
+                    let kernel_path = convert_to_absolute(
+                        "configs",
+                        config.get("kernel_path").unwrap().as_str().unwrap(),
+                    );
 
                     // If have dtb_path, include it.
                     writeln!(
@@ -126,7 +128,7 @@ fn generate_load_guest_img(
                         r#"pub fn load_dtb() -> Option<&'static [u8]> {{ "#
                     )?;
                     if let Some(dtb_path) = config.get("dtb_path") {
-                        let dtb_path = convert_to_absolute("configs",dtb_path.as_str().unwrap());
+                        let dtb_path = convert_to_absolute("configs", dtb_path.as_str().unwrap());
                         // 使用 include_bytes! 加载数据
                         writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, dtb_path)?;
                     } else {
