@@ -40,6 +40,7 @@ jobs:
         sudo udevadm control --reload-rules
         sudo udevadm trigger --name-match=kvm
     - name: Run guests
+      if: matrix.arch != 'x86_64'
       run: |
         cat /proc/cpuinfo
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
