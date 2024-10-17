@@ -32,7 +32,7 @@ fn main() {
         .expect("Failed to enable virtualization");
 
     vmm::init();
-    compile_error!("test error!");
+
     vmm::start();
 
     // Todo: move this to `vmm::start()`.
