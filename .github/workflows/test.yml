@@ -79,4 +79,3 @@ jobs:
           cd ~/runner/${{ github.run_id }}-${{ matrix.arch }}-${{ matrix.rust-toolchain }} && make -C arceos-vmm ARCH=x86_64 DISK_IMG=$(pwd)/disk-x86_64.img LOG=info BLK=y ACCEL=y VM_CONFIGS=$(pwd)/arceos-vmm/configs/nimbos-x86_64.toml run
           cd ~ && rm -rf ~/runner/${{ github.run_id }}-${{ matrix.arch }}-${{ matrix.rust-toolchain }}
 
-          exit 1
