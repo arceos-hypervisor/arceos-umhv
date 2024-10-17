@@ -53,7 +53,6 @@ jobs:
         make -C arceos-vmm ARCH=${{ matrix.arch }} DISK_IMG=${DISK_IMG} LOG=info BLK=y ACCEL=${ACCEL} VM_CONFIGS=${VM_CONFIGS} run
     - name: Copy files to current directory
       run: |
-        cp ${{ github.workspace }}/disk-${{ matrix.arch }}.img .
         cp ~/source.tar.gz .
     - name: Copy x86_64 files to remote runner
       uses: appleboy/scp-action@v0.1.7
