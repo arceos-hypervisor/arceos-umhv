@@ -75,4 +75,4 @@ jobs:
         script: |
           cd ~/runner/${{ github.run_id }} && tar -xzf source.tar.gz
           cd ~/runner/${{ github.run_id }} && make -C arceos-vmm ARCH=x86_64 DISK_IMG=~/runner/${{ github.run_id }}/disk-x86_64.img LOG=info BLK=y ACCEL=y VM_CONFIGS=$(pwd)/arceos-vmm/configs/nimbos-x86_64.toml run
-          cd ~ && rm -rf ~/runner/${{ github.run_id }}
+          # cd ~ && rm -rf ~/runner/${{ github.run_id }}
