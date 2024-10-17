@@ -2,8 +2,6 @@ use axvm::config::{AxVMConfig, AxVMCrateConfig};
 
 use crate::vmm::{images::load_vm_images, vm_list::push_vm, VM};
 
-core::arch::global_asm!(include_str!("../../guest.S"));
-
 pub mod config {
     use alloc::vec::Vec;
 

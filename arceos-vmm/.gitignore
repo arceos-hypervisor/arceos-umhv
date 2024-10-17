@@ -18,4 +18,4 @@ rusty-tags.vi
 .DS_Store
 
 # ramdisk for rk3588
-!ramdisk.img
+tools
