@@ -49,7 +49,7 @@ $ cd arceos-vmm
 # x86_64
 $ make ACCEL=y ARCH=x86_64 [LOG=warn|info|debug|trace] VM_CONFIGS=/PATH/TO/CONFIG/FILE run
 # aarch64
-$ make ACCEL=n ARCH=aarch64 [LOG=warn|info|debug|trace] PLATFORM=aarch64-qemu-virt-hv VM_CONFIGS=/PATH/TO/CONFIG/FILE run
+$ make ACCEL=n ARCH=aarch64 [LOG=warn|info|debug|trace] VM_CONFIGS=/PATH/TO/CONFIG/FILE run
 # riscv64
 $ make ACCEL=n ARCH=riscv64 [LOG=warn|info|debug|trace] VM_CONFIGS=/PATH/TO/CONFIG/FILE run
 
