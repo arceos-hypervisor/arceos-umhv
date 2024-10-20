@@ -3,11 +3,20 @@ mod images;
 mod vcpus;
 mod vm_list;
 
+use std::os::arceos::api::task::{self, AxWaitQueueHandle};
+
+use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::Ordering;
+
 use crate::hal::AxVMHalImpl;
 use axvm::{AxVM, AxVMRef};
 
 pub type VM = AxVM<AxVMHalImpl>;
 pub type VMRef = AxVMRef<AxVMHalImpl>;
+
+static VMM: AxWaitQueueHandle = AxWaitQueueHandle::new();
+
+static RUNNING_VM_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 pub fn init() {
     // Initialize guest VM according to config file.
@@ -24,8 +33,14 @@ pub fn start() {
     info!("VMM starting, booting VMs...");
     for vm in vm_list::get_vm_list() {
         match vm.boot() {
-            Ok(_) => info!("VM[{}] boot success", vm.id()),
+            Ok(_) => {
+                RUNNING_VM_COUNT.fetch_add(1, Ordering::Release);
+                info!("VM[{}] boot success", vm.id())
+            }
             Err(err) => warn!("VM[{}] boot failed, error {:?}", vm.id(), err),
         }
     }
+
+    // Do not exit until all VMs are stopped.
+    task::ax_wait_queue_wait_until(&VMM, || RUNNING_VM_COUNT.load(Ordering::Acquire) == 0, None);
 }

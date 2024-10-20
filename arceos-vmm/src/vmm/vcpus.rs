@@ -3,6 +3,9 @@ use alloc::vec::Vec;
 
 use spin::Mutex;
 
+use std::os::arceos::api::sys::ax_terminate;
+use std::os::arceos::modules::axtask;
+
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
 use axvcpu::AxVCpuExitReason;
 
@@ -143,7 +146,7 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                             AxVCpuExitReason::Nothing => {}
                             AxVCpuExitReason::SystemDown => {
                                 warn!("VM[{}] run VCpu[{}] SystemDown", vm_id, vcpu_id);
-                                axhal::misc::terminate()
+                                ax_terminate()
                             }
                             _ => {
                                 warn!("Unhandled VM-Exit");

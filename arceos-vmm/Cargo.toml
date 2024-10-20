@@ -11,8 +11,6 @@ bitflags = "2.2"
 spin = "0.9"
 
 # System dependent modules provided by ArceOS.
-axhal = { workspace = true, features = ["paging"] }
-axtask = { workspace = true, features = ["multitask"] }
 axstd = { workspace = true, features = [
     "alloc",
     "paging",
