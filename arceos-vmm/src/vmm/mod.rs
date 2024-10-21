@@ -34,7 +34,7 @@ pub fn start() {
     for vm in vm_list::get_vm_list() {
         match vm.boot() {
             Ok(_) => {
-                vcpus::notify_all_vcpus(vm.id());
+                vcpus::notify_main_vcpu(vm.id());
                 RUNNING_VM_COUNT.fetch_add(1, Ordering::Release);
                 info!("VM[{}] boot success", vm.id())
             }

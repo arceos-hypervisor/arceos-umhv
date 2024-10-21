@@ -4,8 +4,9 @@ use alloc::vec::Vec;
 use std::os::arceos::api;
 use std::os::arceos::modules::axtask;
 
+use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
-use axvcpu::AxVCpuExitReason;
+use axvcpu::{AxVCpuExitReason, VCpuState};
 
 use api::sys::ax_terminate;
 use api::task::AxCpuMask;
@@ -26,6 +27,8 @@ pub struct VMVcpus {
     _vm_id: usize,
     // A wait queue to manage task scheduling for the vCPUs.
     wait_queue: WaitQueue,
+    // The index of main vCPU task associated with the VM.
+    main_vcpu_index: usize,
     // A list of tasks associated with the vCPUs of this VM.
     vcpu_task_list: Vec<AxTaskRef>,
 }
@@ -44,6 +47,7 @@ impl VMVcpus {
         Self {
             _vm_id: vm.id(),
             wait_queue: WaitQueue::new(),
+            main_vcpu_index: 0,
             vcpu_task_list: Vec::with_capacity(vm.vcpu_num()),
         }
     }
@@ -69,12 +73,6 @@ impl VMVcpus {
         F: Fn() -> bool,
     {
         self.wait_queue.wait_until(condition)
-    }
-
-    /// Notifies all vCPU tasks associated with this VM to wake up.
-    /// This function is used to notify all vCPUs of a VM to start running after the VM has been booted.
-    fn notify_all_vcpu_tasks(&self) {
-        self.wait_queue.notify_all(false);
     }
 }
 
@@ -108,17 +106,48 @@ where
         .wait_until(condition)
 }
 
-/// Notifies all vCPU tasks associated with the specified VM to wake up and resume execution.
-/// This function is used to notify all vCPUs of a VM to start running after the VM has been booted.
+/// Notifies the main vCPU task associated with the specified VM to wake up and resume execution.
+/// This function is used to notify the main vCPU of a VM to start running after the VM has been booted.
 ///
 /// # Arguments
 ///
 /// * `vm_id` - The ID of the VM whose vCPUs are to be notified.
 ///
-pub(crate) fn notify_all_vcpus(vm_id: usize) {
-    unsafe { VM_VCPU_TASK_WAIT_QUEUE.get(&vm_id) }
-        .unwrap()
-        .notify_all_vcpu_tasks();
+pub(crate) fn notify_main_vcpu(vm_id: usize) {
+    let vm_vcpus = unsafe { VM_VCPU_TASK_WAIT_QUEUE.get_mut(&vm_id) }.unwrap();
+    vm_vcpus
+        .wait_queue
+        .notify_task(false, &vm_vcpus.vcpu_task_list[vm_vcpus.main_vcpu_index]);
+}
+
+/// Boot target vCPU on the specified VM.
+/// This function is used to boot a secondary vCPU on a VM, setting the entry point and argument for the vCPU.
+/// 
+/// # Arguments
+/// 
+/// * `vm_id` - The ID of the VM on which the vCPU is to be booted.
+/// * `vcpu_id` - The ID of the vCPU to be booted.
+/// * `entry_point` - The entry point of the vCPU.
+/// * `arg` - The argument to be passed to the vCPU.
+/// 
+fn vcpu_on(vm_id: usize, vcpu_id: usize, entry_point: GuestPhysAddr, arg: usize) {
+    let vm_vcpus = unsafe { VM_VCPU_TASK_WAIT_QUEUE.get_mut(&vm_id) }.unwrap();
+    let vcpu_task = &vm_vcpus.vcpu_task_list[vcpu_id];
+
+    let vcpu = &vcpu_task.task_ext().vcpu;
+
+    assert_eq!(
+        vcpu.state(),
+        VCpuState::Free,
+        "vcpu_on: {} invalid vcpu state {:?}",
+        vcpu_task.id_name(),
+        vcpu.state()
+    );
+
+    vcpu.set_entry(entry_point).expect("vcpu_on: set_entry failed");
+    vcpu.set_gpr(0, arg);
+
+    vm_vcpus.wait_queue.notify_task(false, vcpu_task);
 }
 
 /// Sets up the vCPUs for a given VM by spawing `axtask` for each vCPU,
@@ -172,6 +201,25 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                                 wait(vm_id)
                             }
                             AxVCpuExitReason::Nothing => {}
+                            AxVCpuExitReason::CpuDown { state } => {
+                                warn!(
+                                    "VM[{}] run VCpu[{}] CpuDown state {:#x}",
+                                    vm_id, vcpu_id, state
+                                );
+                                wait(vm_id)
+                            }
+                            AxVCpuExitReason::CpuUp {
+                                target_cpu,
+                                entry_point,
+                                arg,
+                            } => {
+                                info!(
+                                    "VM[{}]'s VCpu[{}] try to boot target_cpu [{}] entry_point={:x} arg={:#x}",
+                                    vm_id, vcpu_id, target_cpu, entry_point, arg
+                                );
+                                vcpu_on(vm_id, target_cpu as _, entry_point, arg as _);
+                                vcpu.set_gpr(0, 0);
+                            }
                             AxVCpuExitReason::SystemDown => {
                                 warn!("VM[{}] run VCpu[{}] SystemDown", vm_id, vcpu_id);
                                 ax_terminate()
