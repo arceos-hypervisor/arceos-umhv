@@ -1,19 +1,24 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
-use spin::Mutex;
+use std::os::arceos::api;
+use std::os::arceos::modules::axtask;
 
+use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
-use axvcpu::AxVCpuExitReason;
+use axvcpu::{AxVCpuExitReason, VCpuState};
+
+use api::sys::ax_terminate;
+use api::task::AxCpuMask;
 
 use crate::task::TaskExt;
 use crate::vmm::VMRef;
 
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
-/// A global static mutex-protected BTreeMap that holds the wait queues for vCPUs
+/// A global static BTreeMap that holds the wait queues for vCPUs
 /// associated with their respective VMs, identified by their VM IDs.
-static VM_VCPU_TASK_WAIT_QUEUE: Mutex<BTreeMap<usize, VMVcpus>> = Mutex::new(BTreeMap::new());
+static mut VM_VCPU_TASK_WAIT_QUEUE: BTreeMap<usize, VMVcpus> = BTreeMap::new();
 
 /// A structure representing the vCPUs of a specific VM, including a wait queue
 /// and a list of tasks associated with the vCPUs.
@@ -22,6 +27,8 @@ pub struct VMVcpus {
     _vm_id: usize,
     // A wait queue to manage task scheduling for the vCPUs.
     wait_queue: WaitQueue,
+    // The index of main vCPU task associated with the VM.
+    main_vcpu_index: usize,
     // A list of tasks associated with the vCPUs of this VM.
     vcpu_task_list: Vec<AxTaskRef>,
 }
@@ -40,6 +47,7 @@ impl VMVcpus {
         Self {
             _vm_id: vm.id(),
             wait_queue: WaitQueue::new(),
+            main_vcpu_index: 0,
             vcpu_task_list: Vec::with_capacity(vm.vcpu_num()),
         }
     }
@@ -52,6 +60,20 @@ impl VMVcpus {
     fn add_vcpu_task(&mut self, vcpu_task: AxTaskRef) {
         self.vcpu_task_list.push(vcpu_task)
     }
+
+    /// Blocks the current thread on the wait queue associated with the vCPUs of this VM.
+    fn wait(&self) {
+        self.wait_queue.wait()
+    }
+
+    /// Blocks the current thread on the wait queue associated with the vCPUs of this VM
+    /// until the provided condition is met.
+    fn wait_until<F>(&self, condition: F)
+    where
+        F: Fn() -> bool,
+    {
+        self.wait_queue.wait_until(condition)
+    }
 }
 
 /// Blocks the current thread until it is explicitly woken up, using the wait queue
@@ -60,13 +82,11 @@ impl VMVcpus {
 /// # Arguments
 ///
 /// * `vm_id` - The ID of the VM whose vCPU wait queue is used to block the current thread.
+///
 fn wait(vm_id: usize) {
-    VM_VCPU_TASK_WAIT_QUEUE
-        .lock()
-        .get(&vm_id)
+    unsafe { VM_VCPU_TASK_WAIT_QUEUE.get(&vm_id) }
         .unwrap()
-        .wait_queue
-        .wait();
+        .wait()
 }
 
 /// Blocks the current thread until the provided condition is met, using the wait queue
@@ -76,16 +96,58 @@ fn wait(vm_id: usize) {
 ///
 /// * `vm_id` - The ID of the VM whose vCPU wait queue is used to block the current thread.
 /// * `condition` - A closure that returns a boolean value indicating whether the condition is met.
+///
 fn wait_for<F>(vm_id: usize, condition: F)
 where
     F: Fn() -> bool,
 {
-    VM_VCPU_TASK_WAIT_QUEUE
-        .lock()
-        .get(&vm_id)
+    unsafe { VM_VCPU_TASK_WAIT_QUEUE.get(&vm_id) }
         .unwrap()
+        .wait_until(condition)
+}
+
+/// Notifies the main vCPU task associated with the specified VM to wake up and resume execution.
+/// This function is used to notify the main vCPU of a VM to start running after the VM has been booted.
+///
+/// # Arguments
+///
+/// * `vm_id` - The ID of the VM whose vCPUs are to be notified.
+///
+pub(crate) fn notify_main_vcpu(vm_id: usize) {
+    let vm_vcpus = unsafe { VM_VCPU_TASK_WAIT_QUEUE.get_mut(&vm_id) }.unwrap();
+    vm_vcpus
         .wait_queue
-        .wait_until(condition);
+        .notify_task(false, &vm_vcpus.vcpu_task_list[vm_vcpus.main_vcpu_index]);
+}
+
+/// Boot target vCPU on the specified VM.
+/// This function is used to boot a secondary vCPU on a VM, setting the entry point and argument for the vCPU.
+/// 
+/// # Arguments
+/// 
+/// * `vm_id` - The ID of the VM on which the vCPU is to be booted.
+/// * `vcpu_id` - The ID of the vCPU to be booted.
+/// * `entry_point` - The entry point of the vCPU.
+/// * `arg` - The argument to be passed to the vCPU.
+/// 
+fn vcpu_on(vm_id: usize, vcpu_id: usize, entry_point: GuestPhysAddr, arg: usize) {
+    let vm_vcpus = unsafe { VM_VCPU_TASK_WAIT_QUEUE.get_mut(&vm_id) }.unwrap();
+    let vcpu_task = &vm_vcpus.vcpu_task_list[vcpu_id];
+
+    let vcpu = &vcpu_task.task_ext().vcpu;
+
+    assert_eq!(
+        vcpu.state(),
+        VCpuState::Free,
+        "vcpu_on: {} invalid vcpu state {:?}",
+        vcpu_task.id_name(),
+        vcpu.state()
+    );
+
+    vcpu.set_entry(entry_point).expect("vcpu_on: set_entry failed");
+    vcpu.set_gpr(0, arg);
+
+    vm_vcpus.wait_queue.notify_task(false, vcpu_task);
 }
 
 /// Sets up the vCPUs for a given VM by spawing `axtask` for each vCPU,
@@ -98,9 +160,7 @@ pub fn setup_vm_vcpus(vm: VMRef) {
     info!("Initializing VM[{}]'s {} vcpus", vm.id(), vm.vcpu_num());
     let vm_id = vm.id();
 
-    VM_VCPU_TASK_WAIT_QUEUE
-        .lock()
-        .insert(vm_id, VMVcpus::new(vm.clone()));
+    let mut vm_vcpus = VMVcpus::new(vm.clone());
 
     for vcpu in vm.vcpu_list() {
         info!("Spawning task for Vcpu[{}]", vcpu.id());
@@ -141,9 +201,28 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                                 wait(vm_id)
                             }
                             AxVCpuExitReason::Nothing => {}
+                            AxVCpuExitReason::CpuDown { state } => {
+                                warn!(
+                                    "VM[{}] run VCpu[{}] CpuDown state {:#x}",
+                                    vm_id, vcpu_id, state
+                                );
+                                wait(vm_id)
+                            }
+                            AxVCpuExitReason::CpuUp {
+                                target_cpu,
+                                entry_point,
+                                arg,
+                            } => {
+                                info!(
+                                    "VM[{}]'s VCpu[{}] try to boot target_cpu [{}] entry_point={:x} arg={:#x}",
+                                    vm_id, vcpu_id, target_cpu, entry_point, arg
+                                );
+                                vcpu_on(vm_id, target_cpu as _, entry_point, arg as _);
+                                vcpu.set_gpr(0, 0);
+                            }
                             AxVCpuExitReason::SystemDown => {
                                 warn!("VM[{}] run VCpu[{}] SystemDown", vm_id, vcpu_id);
-                                axhal::misc::terminate()
+                                ax_terminate()
                             }
                             _ => {
                                 warn!("Unhandled VM-Exit");
@@ -156,17 +235,28 @@ pub fn setup_vm_vcpus(vm: VMRef) {
                     }
                 }
             },
-            format!("VCpu[{}]", vcpu.id()),
+            format!("VM[{}]-VCpu[{}]", vm_id, vcpu.id()),
             KERNEL_STACK_SIZE,
+        );
+
+        if let Some(phys_cpu_set) = vcpu.phys_cpu_set() {
+            task.set_cpumask(AxCpuMask::from_raw_bits(phys_cpu_set));
+        }
+
+        info!(
+            "VM[{}] Vcpu task {} created {:?}",
+            vm_id,
+            task.id_name(),
+            task.cpumask()
         );
 
         task.init_task_ext(TaskExt::new(vm.clone(), vcpu.clone()));
         let task_ref = axtask::spawn_task(task);
 
-        VM_VCPU_TASK_WAIT_QUEUE
-            .lock()
-            .get_mut(&vm_id)
-            .unwrap()
-            .add_vcpu_task(task_ref);
+        vm_vcpus.add_vcpu_task(task_ref);
+    }
+
+    unsafe {
+        VM_VCPU_TASK_WAIT_QUEUE.insert(vm_id, vm_vcpus);
     }
 }

@@ -1,4 +1,7 @@
-use axvm::AxVMHal;
+use std::os::arceos;
+
+use arceos::modules::axhal;
+use axvm::{AxVMHal, AxVMPerCpu};
 // Todo: should we know about HostPhysAddr and HostVirtAddr here???
 use axaddrspace::{HostPhysAddr, HostVirtAddr};
 
@@ -14,6 +17,54 @@ impl AxVMHal for AxVMHalImpl {
 
     fn current_time_nanos() -> u64 {
         axhal::time::monotonic_time_nanos()
+    }
+}
+
+#[percpu::def_percpu]
+static mut AXVM_PER_CPU: AxVMPerCpu = AxVMPerCpu::new_uninit();
+
+/// Init hardware virtualization support in each core.
+pub(crate) fn enable_virtualization() {
+    use core::sync::atomic::AtomicUsize;
+    use core::sync::atomic::Ordering;
+
+    use std::thread;
+
+    use arceos::api::config;
+    use arceos::api::task::{ax_set_current_affinity, AxCpuMask};
+    use arceos::modules::axhal::cpu::this_cpu_id;
+
+    static CORES: AtomicUsize = AtomicUsize::new(0);
+
+    for cpu_id in 0..config::SMP {
+        thread::spawn(move || {
+            // Initialize cpu affinity here.
+            assert!(
+                ax_set_current_affinity(AxCpuMask::one_shot(cpu_id)).is_ok(),
+                "Initialize CPU affinity failed!"
+            );
+
+            let percpu = unsafe { AXVM_PER_CPU.current_ref_mut_raw() };
+            percpu
+                .init(this_cpu_id())
+                .expect("Failed to initialize percpu state");
+            percpu
+                .hardware_enable()
+                .expect("Failed to enable virtualization");
+
+            info!("Hardware virtualization support enabled on core {}", cpu_id);
+
+            let _ = CORES.fetch_add(1, Ordering::Release);
+
+            thread::yield_now();
+        });
+    }
+
+    thread::yield_now();
+
+    // Wait for all cores to enable virtualization.
+    while CORES.load(Ordering::Acquire) != config::SMP {
+        core::hint::spin_loop();
     }
 }
 
