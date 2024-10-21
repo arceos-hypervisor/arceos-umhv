@@ -145,7 +145,7 @@ fn load_vm_image_memory(
     vm: VMRef,
 ) -> AxResult {
     let mut buffer_pos = 0;
-    let image_load_gpa = VirtAddr::from(load_addr);
+    let image_load_gpa = GuestPhysAddr::from(load_addr);
 
     let image_load_regions = vm.get_image_load_region(image_load_gpa, image_size)?;
 
