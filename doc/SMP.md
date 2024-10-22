@@ -28,8 +28,12 @@
 
 * open first terminal
     * `cd arceos-vmm`
-    * `make ARCH=x86_64 ACCEL=y VM_CONFIGS=configs/arceos-x86_64-sleep.toml:configs/starry-x86_64.toml SMP=2 run`
+    * `make ARCH=x86_64 ACCEL=y VM_CONFIGS=configs/arceos-x86_64-sleep.toml:configs/starry-x86_64.toml SMP=2 SECOND_SERIAL=y run`
     * ArceOS-hypervisor itself and Starry-next will print to this terminal.
+    * `SECOND_SERIAL=y` will make qemu open a second serial port and listen on the socket interface from localhost constrained by the `TELNET_PORT` variable (default is 4321, currently only valid under `qemu_system_x86_64`)
+        ```bash
+        qemu-system-x86_64: -serial telnet:localhost:4321,server: info: QEMU waiting for connection on: disconnected:telnet:127.0.0.1:4321,server=on
+        ```
 
 * open another terminal
     * `telnet localhost 4321`

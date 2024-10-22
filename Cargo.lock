@@ -56,7 +56,7 @@ dependencies = [
  "axaddrspace",
  "axerrno",
  "axstd",
- "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git?branch=smp)",
+ "axvcpu",
  "axvm",
  "bitflags 2.6.0",
  "crate_interface",
@@ -113,12 +113,12 @@ dependencies = [
 [[package]]
 name = "arm_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arm_vcpu.git?branch=smp#3097d715616578772a35b632dc9f662a0106c75e"
+source = "git+https://github.com/arceos-hypervisor/arm_vcpu.git?branch=smp#f1c833d68f5b7a9fef89445b362b16a4156838a1"
 dependencies = [
  "aarch64-cpu",
  "axaddrspace",
  "axerrno",
- "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git?branch=smp)",
+ "axvcpu",
  "cortex-a",
  "log",
  "numeric-enum-macro",
@@ -462,18 +462,6 @@ dependencies = [
 [[package]]
 name = "axvcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvcpu.git?branch=smp#7a721b085b61cdaeb4759a279b1c509fa848d7a2"
-dependencies = [
- "axaddrspace",
- "axerrno",
- "memory_addr",
- "percpu",
-]
-
-[[package]]
-name = "axvcpu"
-version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvcpu.git#8e327af9d8f8c6aef046b9df73b21a1ebc74215a"
 dependencies = [
  "axaddrspace",
  "axerrno",
@@ -484,14 +472,13 @@ dependencies = [
 [[package]]
 name = "axvm"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvm.git?branch=tmp_smp#1e6a37999a04ce71b0e966f41b9e28f862444129"
 dependencies = [
  "arm_vcpu",
  "axaddrspace",
  "axdevice",
  "axdevice_base",
  "axerrno",
- "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git?branch=smp)",
+ "axvcpu",
  "cfg-if",
  "log",
  "memory_addr",
@@ -1034,7 +1021,7 @@ source = "git+https://github.com/arceos-hypervisor/riscv_vcpu.git#7bbe90dfbd43ce
 dependencies = [
  "axaddrspace",
  "axerrno",
- "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git)",
+ "axvcpu",
  "bit_field",
  "bitflags 2.6.0",
  "cfg-if",
@@ -1408,7 +1395,7 @@ source = "git+https://github.com/arceos-hypervisor/x86_vcpu.git#991fa12d24859fef
 dependencies = [
  "axaddrspace",
  "axerrno",
- "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git)",
+ "axvcpu",
  "bit_field",
  "bitflags 2.6.0",
  "cfg-if",

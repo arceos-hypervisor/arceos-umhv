@@ -256,10 +256,10 @@ fn vcpu_run() {
                     wait(vm_id)
                 }
                 AxVCpuExitReason::Nothing => {}
-                AxVCpuExitReason::CpuDown { state } => {
+                AxVCpuExitReason::CpuDown { _state } => {
                     warn!(
                         "VM[{}] run VCpu[{}] CpuDown state {:#x}",
-                        vm_id, vcpu_id, state
+                        vm_id, vcpu_id, _state
                     );
                     wait(vm_id)
                 }
@@ -267,6 +267,7 @@ fn vcpu_run() {
                     target_cpu,
                     entry_point,
                     arg,
+                    opaque: _, // Currently unused.
                 } => {
                     info!(
                         "VM[{}]'s VCpu[{}] try to boot target_cpu [{}] entry_point={:x} arg={:#x}",
