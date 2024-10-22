@@ -22,10 +22,10 @@ pub fn init() {
     // Initialize guest VM according to config file.
     config::init_guest_vms();
 
-    // Setup vcpus, spawn axtask for VCpu.
+    // Setup vcpus, spawn axtask for primary VCpu.
     info!("Setting up vcpus...");
     for vm in vm_list::get_vm_list() {
-        vcpus::setup_vm_vcpus(vm);
+        vcpus::setup_vm_primary_vcpu(vm);
     }
 }
 
@@ -34,6 +34,7 @@ pub fn start() {
     for vm in vm_list::get_vm_list() {
         match vm.boot() {
             Ok(_) => {
+                vcpus::notify_primary_vcpu(vm.id());
                 RUNNING_VM_COUNT.fetch_add(1, Ordering::Release);
                 info!("VM[{}] boot success", vm.id())
             }

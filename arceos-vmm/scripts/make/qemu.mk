@@ -72,9 +72,11 @@ ifeq ($(QEMU_LOG), y)
   qemu_args-y += -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors
 endif
 
-ifeq ($(SMP), 2)
-  qemu_args-y +=  -serial mon:stdio \
-    -serial telnet:localhost:$(TELNET_PORT),server,nowait
+ifeq ($(ARCH), x86_64)
+  ifeq ($(shell [ $(SMP) -ge 2 ] && echo 1), 1)
+    qemu_args-y +=  -serial mon:stdio \
+      -serial telnet:localhost:$(TELNET_PORT),server
+  endif
 endif
 
 qemu_args-debug := $(qemu_args-y) -s -S
