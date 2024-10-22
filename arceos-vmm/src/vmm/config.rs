@@ -16,7 +16,7 @@ pub mod config {
             // #[cfg(target_arch = "aarch64")]
             // core::include_str!("../../configs/nimbos-aarch64.toml"),
             // #[cfg(target_arch = "aarch64")]
-            // core::include_str!("../../configs/linux-rk3588-aarch64.toml"),
+            // core::include_str!("../../configs/rk3588-aarch64.toml"),
             #[cfg(target_arch = "aarch64")]
             core::include_str!("../../configs/arceos-aarch64.toml"),
             // #[cfg(target_arch = "riscv64")]
