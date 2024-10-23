@@ -4,7 +4,6 @@ vm_type = 1
 cpu_set = 2
 cpu_num = 1
 entry_point = 0x1008_0000
-# kernel_path = "linux-aarch64.bin"
 kernel_load_addr = 0x1008_0000
 dtb_load_addr = 0x1000_0000
 
@@ -16,10 +15,9 @@ dtb_path = "linux-rk3588.dtb"
 
 # load from file system
 # image_location = "fs"
-# kernel_path = "arceos-aarch64.bin"
+# kernel_path = "linux-arceos-aarch64.bin"
+# dtb_path = "linux-rk3588.dtb"
 
-platform = "aarch64-rk3588j"
-arch = "aarch64"
 # ramdisk_path = ""
 # ramdisk_load_addr = 0
 # disk_path = "disk.img"

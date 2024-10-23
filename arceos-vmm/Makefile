@@ -82,12 +82,10 @@ else ifneq ($(PLATFORM),)
     # builtin platform, use custom config file in platforms directory for building hypervisor apps
     PLATFORM := platforms/$(PLATFORM).toml
     PLATFORM_NAME := $(PLATFORM)
-    VM_CONFIGS ?= configs/$(PLATFORM).toml
     _arch := $(word 1,$(subst -, ,$(PLATFORM)))
   else ifneq ($(wildcard $(PLATFORM)),)
     # custom platform, read the "platform" field from the toml file
     PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-    VM_CONFIGS ?= $(PLATFORM)
     _arch := $(shell cat $(PLATFORM) | sed -n 's/^arch = "\([a-z0-9A-Z_\-]*\)"/\1/p')
   else
     $(error "PLATFORM" must be one of "$(builtin_platforms)" or a valid path to a toml file)

@@ -122,8 +122,20 @@ fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
         .expect("Failed to load DTB images");
     }
 
+    // Load BIOS image
+    if let Some(buffer) = config::load_bios() {
+        load_vm_image_memory(
+            Vec::from(buffer).as_mut_ptr(),
+            config.bios_load_addr.unwrap(),
+            buffer.len(),
+            vm.clone(),
+        )
+        .expect("Failed to load BIOS images");
+    }
+
+    // Load kernel image.
     if let Some(buffer) = config::load_kernel() {
-        // Load kernel image.
+        
         load_vm_image_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.kernel_load_addr,

@@ -129,8 +129,21 @@ fn generate_load_guest_img(
                     )?;
                     if let Some(dtb_path) = config.get("dtb_path") {
                         let dtb_path = convert_to_absolute("configs", dtb_path.as_str().unwrap());
-                        // 使用 include_bytes! 加载数据
+                        // use include_bytes! load image
                         writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, dtb_path)?;
+                    } else {
+                        writeln!(out_file, r#"    None"#)?;
+                    };
+
+                    // If have bios_path, include it.
+                    writeln!(
+                        out_file,
+                        r#"pub fn load_bios() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    if let Some(bios_path) = config.get("bios_path") {
+                        let bios_path = convert_to_absolute("configs", bios_path.as_str().unwrap());
+                        // use include_bytes! load image
+                        writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, bios_path)?;
                     } else {
                         writeln!(out_file, r#"    None"#)?;
                     };
@@ -141,7 +154,7 @@ fn generate_load_guest_img(
                         out_file,
                         r#"pub fn load_kernel() -> Option<&'static [u8]> {{ "#
                     )?;
-                    // 使用 include_bytes! 加载数据
+                    // use include_bytes! load image
                     writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, kernel_path)?;
                     writeln!(out_file, r#"}}"#)?;
 
@@ -158,6 +171,10 @@ pub fn load_dtb() -> Option<&'static [u8]> {{
 }}
     
 pub fn load_kernel() -> Option<&'static [u8]> {{ 
+    None
+}}
+
+pub fn load_bios() -> Option<&'static [u8]> {{ 
     None
 }}
 "#
@@ -204,7 +221,7 @@ fn main() -> io::Result<()> {
     }
     writeln!(output_file, "}}")?;
 
-    // load kernel and dtb images
+    // generate "load kernel and dtb images function"
     generate_load_guest_img(output_file, config_toml_path)?;
 
     Ok(())
