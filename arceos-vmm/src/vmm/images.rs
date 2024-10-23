@@ -15,14 +15,14 @@ use alloc::vec::Vec;
 /// Loads the VM image files.
 pub fn load_vm_images(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     match config.image_location.as_deref() {
-        Some("memory") => load_vm_images_memory(config, vm),
-        _ => load_vm_images_filesystem(config, vm),
+        Some("memory") => load_vm_images_from_memory(config, vm),
+        _ => load_vm_images_from_filesystem(config, vm),
     }
 }
 
 /// Loads the VM image files from the filesystem
 /// into the guest VM's memory space based on the VM configuration.
-fn load_vm_images_filesystem(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
+fn load_vm_images_from_filesystem(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     info!("Loading VM images from filesystem");
     // Load kernel image.
     load_vm_image(
@@ -106,13 +106,13 @@ fn open_image_file(file_name: &str) -> AxResult<(File, usize)> {
     Ok((file, file_size))
 }
 
-/// Load VM images from memory (guest.S)
+/// Load VM images from memory
 /// into the guest VM's memory space based on the VM configuration.
-fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
+fn load_vm_images_from_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     info!("Loading VM images from memory");
 
     // Load DTB image
-    if let Some(buffer) = config::load_dtb() {
+    if let Some(buffer) = config::get_dtb_binaries() {
         load_vm_image_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.dtb_load_addr.unwrap(),
@@ -123,7 +123,7 @@ fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     }
 
     // Load BIOS image
-    if let Some(buffer) = config::load_bios() {
+    if let Some(buffer) = config::get_bios_binaries() {
         load_vm_image_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.bios_load_addr.unwrap(),
@@ -134,7 +134,7 @@ fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     }
 
     // Load kernel image.
-    if let Some(buffer) = config::load_kernel() {
+    if let Some(buffer) = config::get_kernel_binaries() {
         load_vm_image_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.kernel_load_addr,
@@ -143,7 +143,7 @@ fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
         )
         .expect("Failed to load VM images");
     } else {
-        panic!("VM images is missed, add `VM_CONFIGS=configs/aarch64-linux.toml` in make command.");
+        panic!("VM images is missed, Perhaps add `VM_CONFIGS=PATH/CONFIGS/FILE` command.");
     }
 
     Ok(())
@@ -164,7 +164,7 @@ fn load_vm_image_memory(
         let region_len = region.len();
         let bytes_to_write = region_len.min(image_size - buffer_pos);
 
-        // copy data from .tbdata section
+        // copy data from memory
         unsafe {
             core::ptr::copy_nonoverlapping(
                 buffer.offset(buffer_pos as isize),

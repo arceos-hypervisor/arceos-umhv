@@ -125,7 +125,7 @@ fn generate_load_guest_img(
                     // If have dtb_path, include it.
                     writeln!(
                         out_file,
-                        r#"pub fn load_dtb() -> Option<&'static [u8]> {{ "#
+                        r#"pub fn get_dtb_binaries() -> Option<&'static [u8]> {{ "#
                     )?;
                     if let Some(dtb_path) = config.get("dtb_path") {
                         let dtb_path = convert_to_absolute("configs", dtb_path.as_str().unwrap());
@@ -138,7 +138,7 @@ fn generate_load_guest_img(
                     // If have bios_path, include it.
                     writeln!(
                         out_file,
-                        r#"pub fn load_bios() -> Option<&'static [u8]> {{ "#
+                        r#"pub fn get_bios_binaries() -> Option<&'static [u8]> {{ "#
                     )?;
                     if let Some(bios_path) = config.get("bios_path") {
                         let bios_path = convert_to_absolute("configs", bios_path.as_str().unwrap());
@@ -152,7 +152,7 @@ fn generate_load_guest_img(
 
                     writeln!(
                         out_file,
-                        r#"pub fn load_kernel() -> Option<&'static [u8]> {{ "#
+                        r#"pub fn get_kernel_binaries() -> Option<&'static [u8]> {{ "#
                     )?;
                     // use include_bytes! load image
                     writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, kernel_path)?;
@@ -166,15 +166,15 @@ fn generate_load_guest_img(
     writeln!(
         out_file,
         r#"
-pub fn load_dtb() -> Option<&'static [u8]> {{ 
+pub fn get_dtb_binaries() -> Option<&'static [u8]> {{ 
     None
 }}
     
-pub fn load_kernel() -> Option<&'static [u8]> {{ 
+pub fn get_kernel_binaries() -> Option<&'static [u8]> {{ 
     None
 }}
 
-pub fn load_bios() -> Option<&'static [u8]> {{ 
+pub fn get_bios_binaries() -> Option<&'static [u8]> {{ 
     None
 }}
 "#
