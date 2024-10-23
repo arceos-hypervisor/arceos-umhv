@@ -199,6 +199,7 @@ fn main() -> io::Result<()> {
         output_file,
         "pub fn static_vm_configs() -> Vec<&'static str> {{"
     )?;
+
     match config_files {
         Ok(config_files) => {
             if config_files.is_empty() {

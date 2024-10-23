@@ -135,7 +135,6 @@ fn load_vm_images_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
 
     // Load kernel image.
     if let Some(buffer) = config::load_kernel() {
-        
         load_vm_image_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.kernel_load_addr,
