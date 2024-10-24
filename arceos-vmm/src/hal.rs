@@ -76,7 +76,7 @@ pub(crate) fn enable_virtualization() {
 /// To avoid unnecessary Rust generic type applications, we decided to introduce `crate_interface` in the [`x86_vcpu`](https://github.com/arceos-hypervisor/x86_vcpu) crate
 /// and use it to call OS-related resource allocation interfaces to implement `PhysFrameIf`.
 #[cfg(target_arch = "x86_64")]
-mod frame_x86 {
+mod hal_x86 {
     use axaddrspace::{HostPhysAddr, HostVirtAddr};
     use page_table_multiarch::PagingHandler;
 
@@ -100,6 +100,20 @@ mod frame_x86 {
         #[inline]
         fn phys_to_virt(paddr: HostPhysAddr) -> HostVirtAddr {
             <AxVMHalImpl as AxVMHal>::PagingHandler::phys_to_virt(paddr)
+        }
+    }
+}
+
+#[cfg(target_arch = "riscv64")]
+mod hal_riscv64 {
+    /// Implementation for `HalIf` trait provided by [riscv_vcpu](https://github.com/arceos-hypervisor/riscv_vcpu) crate.
+    struct HalIfImpl;
+
+    #[crate_interface::impl_interface]
+    impl riscv_vcpu::HalIf for HalIfImpl {
+        #[doc = " Returns the physical address of the given virtual address."]
+        fn virt_to_phys(vaddr: axaddrspace::HostVirtAddr) -> axaddrspace::HostPhysAddr {
+            std::os::arceos::modules::axhal::mem::virt_to_phys(vaddr)
         }
     }
 }

@@ -134,7 +134,7 @@ pub(crate) fn notify_primary_vcpu(vm_id: usize) {
 /// * `entry_point` - The entry point of the vCPU.
 /// * `arg` - The argument to be passed to the vCPU.
 ///
-fn vcpu_on(vm: VMRef, vcpu_id: usize, entry_point: GuestPhysAddr, arg: usize) {
+fn vcpu_on(vm: VMRef, vcpu_id: usize, entry_point: GuestPhysAddr, arg: usize, _opaque: usize) {
     let vcpu = vm.vcpu_list()[vcpu_id].clone();
     assert_eq!(
         vcpu.state(),
@@ -147,6 +147,16 @@ fn vcpu_on(vm: VMRef, vcpu_id: usize, entry_point: GuestPhysAddr, arg: usize) {
     vcpu.set_entry(entry_point)
         .expect("vcpu_on: set_entry failed");
     vcpu.set_gpr(0, arg);
+
+    #[cfg(target_arch = "riscv64")]
+    {
+        debug!(
+            "vcpu_on: vcpu[{}] entry={:x} opaque={:x}",
+            vcpu_id, entry_point, _opaque
+        );
+        vcpu.set_gpr(10, vcpu_id);
+        vcpu.set_gpr(11, _opaque);
+    }
 
     let vcpu_task = alloc_vcpu_task(vm.clone(), vcpu);
 
@@ -267,13 +277,19 @@ fn vcpu_run() {
                     target_cpu,
                     entry_point,
                     arg,
-                    opaque: _, // Currently unused.
+                    opaque, // Currently unused.
                 } => {
                     info!(
                         "VM[{}]'s VCpu[{}] try to boot target_cpu [{}] entry_point={:x} arg={:#x}",
                         vm_id, vcpu_id, target_cpu, entry_point, arg
                     );
-                    vcpu_on(vm.clone(), target_cpu as _, entry_point, arg as _);
+                    vcpu_on(
+                        vm.clone(),
+                        target_cpu as _,
+                        entry_point,
+                        arg as _,
+                        opaque as _,
+                    );
                     vcpu.set_gpr(0, 0);
                 }
                 AxVCpuExitReason::SystemDown => {
