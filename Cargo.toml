@@ -9,25 +9,10 @@ lto = true
 [workspace.dependencies]
 axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm" }
 
-axvm = { git = "https://github.com/arceos-hypervisor/axvm.git", branch = "riscv_smp" }
-axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", branch = "cpuup_arg" }
+axvm = { git = "https://github.com/arceos-hypervisor/axvm.git" }
+axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git" }
 axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git" }
 
-arm_vcpu = { git = "https://github.com/arceos-hypervisor/arm_vcpu.git", branch = "cpuup_arg" }
+arm_vcpu = { git = "https://github.com/arceos-hypervisor/arm_vcpu.git" }
 x86_vcpu = { git = "https://github.com/arceos-hypervisor/x86_vcpu.git" }
-riscv_vcpu = { git = "https://github.com/arceos-hypervisor/riscv_vcpu.git", branch = "smp" }
-
-# [patch."https://github.com/arceos-hypervisor/arceos.git"]
-# axstd = { path = "../arceos/ulib/axstd" }
-
-# [patch."https://github.com/arceos-hypervisor/riscv_vcpu.git"]
-# riscv_vcpu = { path = "../arceos-crates/riscv_vcpu" }
-
-# [patch."https://github.com/arceos-hypervisor/arm_vcpu.git"]
-# arm_vcpu = { path = "../arceos-crates/arm_vcpu" }
-
-# [patch."https://github.com/arceos-hypervisor/axvm.git"]
-# axvm = { path = "../arceos-crates/axvm" }
-
-# [patch."https://github.com/arceos-hypervisor/axvcpu.git"]
-# axvcpu = { path = "../arceos-crates/axvcpu" }
+riscv_vcpu = { git = "https://github.com/arceos-hypervisor/riscv_vcpu.git" }
