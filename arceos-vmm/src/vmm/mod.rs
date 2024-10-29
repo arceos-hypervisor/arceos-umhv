@@ -2,6 +2,7 @@ mod config;
 mod images;
 mod vcpus;
 mod vm_list;
+mod timers;
 
 use std::os::arceos::api::task::{self, AxWaitQueueHandle};
 
@@ -21,6 +22,9 @@ static RUNNING_VM_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub fn init() {
     // Initialize guest VM according to config file.
     config::init_guest_vms();
+
+    // Initialize timer list
+    timers::init();
 
     // Setup vcpus, spawn axtask for primary VCpu.
     info!("Setting up vcpus...");
