@@ -13,8 +13,8 @@ use api::sys::ax_terminate;
 use api::task::AxCpuMask;
 
 use crate::task::TaskExt;
+use crate::vmm::timers::{check_events, register_timer, scheduler_next_event, VmmTimerEvent};
 use crate::vmm::VMRef;
-use crate::vmm::timers::{register_timer, VmmTimerEvent, check_events, scheduler_next_event};
 
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
@@ -290,12 +290,9 @@ fn vcpu_run() {
                     warn!("VM[{}] run VCpu[{}] SystemDown", vm_id, vcpu_id);
                     ax_terminate()
                 }
-                AxVCpuExitReason::SetTimer { time, callback} => {
+                AxVCpuExitReason::SetTimer { time, callback } => {
                     // info!("register");
-                    register_timer(
-                        time,
-                        VmmTimerEvent::new(callback),
-                    );
+                    register_timer(time, VmmTimerEvent::new(callback));
                 }
                 AxVCpuExitReason::TimerIrq => {
                     check_events();

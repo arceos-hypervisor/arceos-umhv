@@ -1,7 +1,7 @@
 extern crate alloc;
 
-use std::os::arceos::modules::axtask;
 use std::os::arceos::modules::axhal;
+use std::os::arceos::modules::axtask;
 
 use alloc::boxed::Box;
 use axtask::CurrentTask;
@@ -13,12 +13,10 @@ const TICKS_PER_SEC: u64 = 100;
 const NANOS_PER_SEC: u64 = 1_000_000_000;
 const PERIODIC_INTERVAL_NANOS: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
 
-
 pub struct VmmTimerEvent {
     task: CurrentTask,
     timer_callback: Box<dyn FnOnce(TimeValue) + Send + 'static>,
 }
-
 
 impl VmmTimerEvent {
     /// Constructs a new [`VmmTimerEvent`] from a closure.
@@ -51,7 +49,8 @@ pub fn register_timer(deadline: u64, handler: VmmTimerEvent) {
 
 pub fn cancel_timer<F>(condition: F)
 where
-    F: Fn(&VmmTimerEvent) -> bool, {
+    F: Fn(&VmmTimerEvent) -> bool,
+{
     let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
     let mut timers = timer_list.lock();
     timers.cancel(condition);
