@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use std::os::arceos::api;
 use std::os::arceos::modules::axtask;
+use std::os::arceos::modules::axhal::cpu::this_cpu_id;
 
 use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
@@ -245,7 +246,7 @@ fn vcpu_run() {
     info!("VM[{}] Vcpu[{}] running...", vm.id(), vcpu.id());
 
     loop {
-        match vm.run_vcpu(vcpu_id) {
+        match vm.run_vcpu(vcpu_id, this_cpu_id() as isize) {
             // match vcpu.run() {
             Ok(exit_reason) => match exit_reason {
                 AxVCpuExitReason::Hypercall { nr, args } => {
