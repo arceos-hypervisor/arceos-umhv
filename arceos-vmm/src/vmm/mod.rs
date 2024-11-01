@@ -3,6 +3,7 @@ mod images;
 mod timers;
 mod vcpus;
 mod vm_list;
+mod ipi;
 
 use std::os::arceos::api::task::{self, AxWaitQueueHandle};
 

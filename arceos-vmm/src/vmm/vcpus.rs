@@ -246,7 +246,7 @@ fn vcpu_run() {
     info!("VM[{}] Vcpu[{}] running...", vm.id(), vcpu.id());
 
     loop {
-        match vm.run_vcpu(vcpu_id, this_cpu_id() as isize) {
+        match vm.run_vcpu(vcpu_id, this_cpu_id()) {
             // match vcpu.run() {
             Ok(exit_reason) => match exit_reason {
                 AxVCpuExitReason::Hypercall { nr, args } => {
