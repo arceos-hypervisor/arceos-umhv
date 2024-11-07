@@ -5,6 +5,8 @@ use axvm::{AxVMHal, AxVMPerCpu};
 // Todo: should we know about HostPhysAddr and HostVirtAddr here???
 use axaddrspace::{HostPhysAddr, HostVirtAddr};
 
+use axvcpu::AxVCpuHal;
+
 /// Implementation for `AxVMHal` trait.
 pub struct AxVMHalImpl;
 
@@ -17,6 +19,18 @@ impl AxVMHal for AxVMHalImpl {
 
     fn current_time_nanos() -> u64 {
         axhal::time::monotonic_time_nanos()
+    }
+}
+
+pub struct AxVCpuHalImpl;
+
+impl AxVCpuHal for AxVCpuHalImpl {
+    fn irq_fecth(&self) -> u64 {
+        0
+    }
+
+    fn irq_hanlder(&self) {
+        todo!()
     }
 }
 
