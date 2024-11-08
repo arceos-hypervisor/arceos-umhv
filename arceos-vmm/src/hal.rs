@@ -25,11 +25,11 @@ impl AxVMHal for AxVMHalImpl {
 pub struct AxVCpuHalImpl;
 
 impl AxVCpuHal for AxVCpuHalImpl {
-    fn irq_fecth(&self) -> u64 {
-        0
+    fn irq_fecth(&self) -> usize {
+        axhal::irq::fetch_irq()
     }
 
-    fn irq_hanlder(&self) {
+    fn irq_hanlder() {
         todo!()
     }
 }
@@ -128,6 +128,19 @@ mod hal_riscv64 {
         #[doc = " Returns the physical address of the given virtual address."]
         fn virt_to_phys(vaddr: axaddrspace::HostVirtAddr) -> axaddrspace::HostPhysAddr {
             std::os::arceos::modules::axhal::mem::virt_to_phys(vaddr)
+        }
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+mod hal_arm {
+    /// Implementation for `HalIf` trait provided by [aarch64_vcpu](https://github.com/arceos-hypervisor/aarch64_vcpu) crate.
+    struct HalIfImpl;
+
+    #[crate_interface::impl_interface]
+    impl arm_vcpu::HalIf for HalIfImpl {
+        fn irq_hanlder() {
+            debug!("IRQ handler");
         }
     }
 }

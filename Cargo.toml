@@ -17,6 +17,9 @@ arm_vcpu = { git = "https://github.com/arceos-hypervisor/arm_vcpu.git" }
 x86_vcpu = { git = "https://github.com/arceos-hypervisor/x86_vcpu.git" }
 riscv_vcpu = { git = "https://github.com/arceos-hypervisor/riscv_vcpu.git" }
 
+[patch."https://github.com/arceos-hypervisor/arceos.git"]
+axstd = { path = "../arceos/ulib/axstd" }
+
 [patch."https://github.com/arceos-hypervisor/axvm.git"]
 axvm = { path = "../arceos-crates/axvm" }
 
