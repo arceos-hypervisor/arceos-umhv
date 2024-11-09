@@ -1008,7 +1008,6 @@ dependencies = [
 [[package]]
 name = "riscv_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/riscv_vcpu.git#1021d026e413acaae3cf994420bb1fd94ff91dd9"
 dependencies = [
  "axaddrspace",
  "axerrno",
@@ -1379,7 +1378,6 @@ dependencies = [
 [[package]]
 name = "x86_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/x86_vcpu.git#991fa12d24859fef6b8a018d1c16494b9166f946"
 dependencies = [
  "axaddrspace",
  "axerrno",

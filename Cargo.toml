@@ -28,3 +28,9 @@ axvcpu = { path = "../arceos-crates/axvcpu" }
 
 [patch."https://github.com/arceos-hypervisor/arm_vcpu.git"]
 arm_vcpu = { path = "../arceos-crates/arm_vcpu" }
+
+[patch."https://github.com/arceos-hypervisor/x86_vcpu.git"]
+x86_vcpu = { path = "../arceos-crates/x86_vcpu" }
+
+[patch."https://github.com/arceos-hypervisor/riscv_vcpu.git"]
+riscv_vcpu = { path = "../arceos-crates/riscv_vcpu" }
