@@ -71,12 +71,13 @@ where
 }
 
 pub fn check_events() {
+    // error!("check ev");
     loop {
         let now = axhal::time::wall_time();
         let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
         let event = timer_list.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
-            // info!("pick one to handler!!!");
+            error!("pick one {:#?} to handler!!!", _deadline);
             event.callback(now);
         } else {
             break;
@@ -85,18 +86,26 @@ pub fn check_events() {
 }
 
 pub fn scheduler_next_event() {
-    // info!("set deadline!!!");
     let now_ns = axhal::time::monotonic_time_nanos();
-    let deadline = now_ns + PERIODIC_INTERVAL_NANOS;
+    let deadline = now_ns + 2 * PERIODIC_INTERVAL_NANOS;
+    // error!("PHY deadline {} !!!", deadline);
     axhal::time::set_oneshot_timer(deadline);
 }
 
 pub fn init() {
+    error!("hello");
     let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
     timer_list.init_once(SpinNoIrq::new(TimerList::new()));
 
-    axhal::irq::register_handler(axhal::time::TIMER_IRQ_NUM, || {
+    let res = axhal::irq::register_handler(axhal::time::TIMER_IRQ_NUM, || {
+        debug!("hv handler");
         check_events();
         scheduler_next_event();
+        axtask::on_timer_tick();
+        debug!("hv handler end");
     });
+    
+    error!("res: {}", res);
+    
+    assert!(res == true);
 }
