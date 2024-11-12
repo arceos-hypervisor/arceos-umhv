@@ -25,8 +25,10 @@ use std::{
     ffi::OsString,
     fs,
     io::{self, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
+
+use toml::Value;
 
 /// A configuration file that has been read from disk.
 struct ConfigFile {
@@ -79,7 +81,115 @@ fn open_output_file() -> fs::File {
         .unwrap()
 }
 
+fn read_toml_file(file_path: &str) -> io::Result<Value> {
+    println!("Reading {}", file_path);
+    let contents = fs::read_to_string(file_path)
+        .unwrap_or_else(|_| panic!("Failed to read file {}", file_path));
+    let parsed_toml: Value = contents
+        .parse::<Value>()
+        .expect("failed to parse config file");
+    Ok(parsed_toml)
+}
+
+/// generate function to load guest images from config
+/// Toml file must be provided to load from memory.
+fn generate_load_guest_img_functions(
+    mut out_file: fs::File,
+    config_toml_paths: Option<Vec<OsString>>,
+) -> io::Result<()> {
+    // Convert relative path to absolute path
+    fn convert_to_absolute(configs_path: &str, path: &str) -> PathBuf {
+        let path = Path::new(path);
+        let configs_path = Path::new(configs_path).join(path);
+        if path.is_relative() {
+            fs::canonicalize(&configs_path).unwrap_or_else(|_| path.to_path_buf())
+        } else {
+            path.to_path_buf()
+        }
+    }
+
+    if let Some(config_path) = config_toml_paths {
+        // Started from the first config item by default.
+        if let Some(guest_config) = config_path.first() {
+            let config =
+                read_toml_file(guest_config.to_str().expect("Path contains invalid UTF-8"))
+                    .expect("failed to read config file");
+            if let Some(image_location) = config.get("image_location") {
+                let location: &str = image_location.as_str().unwrap();
+                if location == "memory" {
+                    let kernel_path = convert_to_absolute(
+                        "configs",
+                        config.get("kernel_path").unwrap().as_str().unwrap(),
+                    );
+
+                    // If have dtb_path, include it.
+                    writeln!(
+                        out_file,
+                        r#"pub fn get_dtb_binary() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    if let Some(dtb_path) = config.get("dtb_path") {
+                        let dtb_path = convert_to_absolute("configs", dtb_path.as_str().unwrap());
+                        // use include_bytes! load image
+                        writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, dtb_path)?;
+                    } else {
+                        writeln!(out_file, r#"    None"#)?;
+                    };
+                    writeln!(out_file, r#"}}"#)?;
+
+                    // If have bios_path, include it.
+                    writeln!(
+                        out_file,
+                        r#"pub fn get_bios_binary() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    if let Some(bios_path) = config.get("bios_path") {
+                        let bios_path = convert_to_absolute("configs", bios_path.as_str().unwrap());
+                        // use include_bytes! load image
+                        writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, bios_path)?;
+                    } else {
+                        writeln!(out_file, r#"    None"#)?;
+                    };
+
+                    writeln!(out_file, r#"}}"#)?;
+
+                    writeln!(
+                        out_file,
+                        r#"pub fn get_kernel_binary() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    // use include_bytes! load image
+                    writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, kernel_path)?;
+                    writeln!(out_file, r#"}}"#)?;
+
+                    return Ok(());
+                }
+            }
+        }
+    }
+    writeln!(
+        out_file,
+        r#"
+pub fn get_dtb_binary() -> Option<&'static [u8]> {{ 
+    None
+}}
+    
+pub fn get_kernel_binary() -> Option<&'static [u8]> {{ 
+    None
+}}
+
+pub fn get_bios_binary() -> Option<&'static [u8]> {{ 
+    None
+}}
+"#
+    )?;
+    Ok(())
+}
+
 fn main() -> io::Result<()> {
+    let platform = env::var("AX_PLATFORM").unwrap_or("".to_string());
+    let platform_family = env::var("AX_PLATFORM").unwrap_or("".to_string());
+    let config_toml_paths = get_config_paths();
+    println!("cargo:rustc-cfg=platform=\"{}\"", platform);
+    println!("cargo:rustc-cfg=platform_family=\"{}\"", platform_family);
+
     let config_files = get_configs();
     let mut output_file = open_output_file();
 
@@ -90,6 +200,7 @@ fn main() -> io::Result<()> {
         output_file,
         "pub fn static_vm_configs() -> Vec<&'static str> {{"
     )?;
+
     match config_files {
         Ok(config_files) => {
             if config_files.is_empty() {
@@ -111,5 +222,9 @@ fn main() -> io::Result<()> {
         }
     }
     writeln!(output_file, "}}")?;
+
+    // generate "load kernel and dtb images function"
+    generate_load_guest_img_functions(output_file, config_toml_paths)?;
+
     Ok(())
 }
