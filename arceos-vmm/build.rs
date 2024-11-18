@@ -93,7 +93,9 @@ fn read_toml_file(file_path: &str) -> io::Result<Value> {
 
 /// generate function to load guest images from config
 /// Toml file must be provided to load from memory.
-fn generate_load_guest_img_functions(
+/// Only load the first config item, if there are multiple items in the config file.
+/// Other VMs are dynamically loaded from the file system by the first VM that starts.
+fn generate_guest_img_loading_functions(
     mut out_file: fs::File,
     config_toml_paths: Option<Vec<OsString>>,
 ) -> io::Result<()> {
@@ -224,7 +226,7 @@ fn main() -> io::Result<()> {
     writeln!(output_file, "}}")?;
 
     // generate "load kernel and dtb images function"
-    generate_load_guest_img_functions(output_file, config_toml_paths)?;
+    generate_guest_img_loading_functions(output_file, config_toml_paths)?;
 
     Ok(())
 }
