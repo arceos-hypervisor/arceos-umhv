@@ -18,6 +18,7 @@ axstd = { workspace = true, features = [
     "irq",
     "hv",
     "multitask",
+    # "sched_rr"
 ] }
 
 # System dependent modules provided by ArceOS-Hypervisor.

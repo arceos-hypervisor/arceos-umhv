@@ -47,8 +47,11 @@ impl AxVCpuHal for AxVCpuHalImpl {
         axhal::irq::fetch_irq()
     }
 
+    #[cfg(target_arch = "aarch64")]
     fn irq_hanlder() {
-        todo!()
+        let irq_num = axhal::irq::fetch_irq();
+        warn!("IRQ handler {irq_num}");
+        axhal::irq::handler_irq(irq_num);
     }
 }
 
@@ -87,39 +90,12 @@ pub(crate) fn enable_virtualization() {
             info!("Hardware virtualization support enabled on core {}", cpu_id);
 
             let _ = CORES.fetch_add(1, Ordering::Release);
-
-            thread::yield_now();
         });
     }
 
-    thread::yield_now();
-
     // Wait for all cores to enable virtualization.
     while CORES.load(Ordering::Acquire) != config::SMP {
-        core::hint::spin_loop();
-    }
-}
-
-/// Since we re-introduce [`axvcpu::AxVCpuHal`], why do we still need [`arm_vcpu::HalIf`]?
-///
-/// I've tried, there is a `irq_hanlder` in [`arm_vcpu::HalIf`], but it can not be used for vcpu to call
-/// the irq handler provided by host OS (like `axhal::irq::handler_irq(irq_num)`).
-///
-/// The key reason is that a generic type should be applied to a specific struct,
-/// while we need to call this `irq_handler` through symbol link in [`arm_vcpu`] crate's exception handling routine.
-#[cfg(target_arch = "aarch64")]
-mod hal_arm {
-    use std::os::arceos::modules::axhal;
-
-    /// Implementation for `HalIf` trait provided by [aarch64_vcpu](https://github.com/arceos-hypervisor/aarch64_vcpu) crate.
-    struct HalIfImpl;
-
-    #[crate_interface::impl_interface]
-    impl arm_vcpu::HalIf for HalIfImpl {
-        fn irq_hanlder() {
-            let irq_num = axhal::irq::fetch_irq();
-            warn!("IRQ handler {irq_num}");
-            axhal::irq::handler_irq(irq_num);
-        }
+        // Use `yield_now` instead of `core::hint::spin_loop` to avoid deadlock.
+        thread::yield_now();
     }
 }
