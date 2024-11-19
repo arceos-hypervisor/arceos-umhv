@@ -30,6 +30,8 @@ use std::{
 
 use toml::Value;
 
+static CONFIGS_DIR_PATH: &str = "configs";
+
 /// A configuration file that has been read from disk.
 struct ConfigFile {
     /// The path to the configuration file.
@@ -81,23 +83,13 @@ fn open_output_file() -> fs::File {
         .unwrap()
 }
 
-fn read_toml_file(file_path: &str) -> io::Result<Value> {
-    println!("Reading {}", file_path);
-    let contents = fs::read_to_string(file_path)
-        .unwrap_or_else(|_| panic!("Failed to read file {}", file_path));
-    let parsed_toml: Value = contents
-        .parse::<Value>()
-        .expect("failed to parse config file");
-    Ok(parsed_toml)
-}
-
-/// generate function to load guest images from config
+/// Generate function to load guest images from config
 /// Toml file must be provided to load from memory.
 /// Only load the first config item, if there are multiple items in the config file.
 /// Other VMs are dynamically loaded from the file system by the first VM that starts.
 fn generate_guest_img_loading_functions(
     mut out_file: fs::File,
-    config_toml_paths: Option<Vec<OsString>>,
+    config_files: Vec<ConfigFile>,
 ) -> io::Result<()> {
     // Convert relative path to absolute path
     fn convert_to_absolute(configs_path: &str, path: &str) -> PathBuf {
@@ -110,85 +102,108 @@ fn generate_guest_img_loading_functions(
         }
     }
 
-    if let Some(config_path) = config_toml_paths {
-        // Started from the first config item by default.
-        if let Some(guest_config) = config_path.first() {
-            let config =
-                read_toml_file(guest_config.to_str().expect("Path contains invalid UTF-8"))
-                    .expect("failed to read config file");
-            if let Some(image_location) = config.get("image_location") {
-                let location: &str = image_location.as_str().unwrap();
-                if location == "memory" {
-                    let kernel_path = convert_to_absolute(
-                        "configs",
-                        config.get("kernel_path").unwrap().as_str().unwrap(),
-                    );
+    let mut image_load_from_memory = false;
 
-                    // If have dtb_path, include it.
-                    writeln!(
-                        out_file,
-                        r#"pub fn get_dtb_binary() -> Option<&'static [u8]> {{ "#
-                    )?;
-                    if let Some(dtb_path) = config.get("dtb_path") {
-                        let dtb_path = convert_to_absolute("configs", dtb_path.as_str().unwrap());
-                        // use include_bytes! load image
-                        writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, dtb_path)?;
+    for config_file in config_files {
+        // let config =
+        //     read_toml_file(config_file.content.as_str()).expect("failed to read config file");
+        let config = config_file.content.parse::<Value>()
+            .expect("failed to parse config file" );
+        if let Some(image_location_val) = config.get("image_location") {
+            if let Some(image_location) = image_location_val.as_str() {
+                if image_location == "memory" {
+                    // Check if there are multiple VMs in the config file list to be loaded from memory.
+                    // Cause we only support one VM to be loaded from memory at most.
+                    if image_load_from_memory {
+                        writeln!(
+                            out_file,
+                            r#"pub fn error_msg() -> Option<&'static [u8]> {{ "#
+                        )?;
+                        writeln!(out_file, 
+                            "    compile_error!(\"{}\")", 
+                            "ArceOS-Hypervisor currently only supports loading one guestVM image from memory")?;
+                        writeln!(out_file, "}}\n")?;
+                        break;
                     } else {
-                        writeln!(out_file, r#"    None"#)?;
-                    };
-                    writeln!(out_file, r#"}}"#)?;
-
-                    // If have bios_path, include it.
-                    writeln!(
-                        out_file,
-                        r#"pub fn get_bios_binary() -> Option<&'static [u8]> {{ "#
-                    )?;
-                    if let Some(bios_path) = config.get("bios_path") {
-                        let bios_path = convert_to_absolute("configs", bios_path.as_str().unwrap());
-                        // use include_bytes! load image
-                        writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, bios_path)?;
-                    } else {
-                        writeln!(out_file, r#"    None"#)?;
-                    };
-
-                    writeln!(out_file, r#"}}"#)?;
+                        image_load_from_memory = true;
+                    }
 
                     writeln!(
                         out_file,
                         r#"pub fn get_kernel_binary() -> Option<&'static [u8]> {{ "#
                     )?;
-                    // use include_bytes! load image
-                    writeln!(out_file, r#"    Some(include_bytes!({:?}))"#, kernel_path)?;
-                    writeln!(out_file, r#"}}"#)?;
+                    if let Some(kernel_path) = config.get("kernel_path") {
+                        let kernel_path =
+                            convert_to_absolute(CONFIGS_DIR_PATH, kernel_path.as_str().unwrap());
+                        // use include_bytes! load image
+                        writeln!(out_file, "    Some(include_bytes!({:?}))", kernel_path)?;
+                    } else {
+                        writeln!(out_file, 
+                            "    compile_error!(\"{}\")", 
+                            "Kernel image path is not provided if you want to compile the binary file together!")?;
+                    };
 
-                    return Ok(());
+                    writeln!(out_file, "}}\n")?;
+
+                    writeln!(
+                        out_file,
+                        r#"pub fn get_dtb_binary() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    if let Some(dtb_path) = config.get("dtb_path") {
+                        let dtb_path =
+                            convert_to_absolute(CONFIGS_DIR_PATH, dtb_path.as_str().unwrap());
+                        // use include_bytes! load image
+                        writeln!(out_file, "    Some(include_bytes!({:?}))", dtb_path)?;
+                    } else {
+                        writeln!(out_file, "    None")?;
+                    };
+                    writeln!(out_file, "}}\n")?;
+
+                    writeln!(
+                        out_file,
+                        r#"pub fn get_bios_binary() -> Option<&'static [u8]> {{ "#
+                    )?;
+                    if let Some(bios_path) = config.get("bios_path") {
+                        let bios_path =
+                            convert_to_absolute(CONFIGS_DIR_PATH, bios_path.as_str().unwrap());
+                        // use include_bytes! load image
+                        writeln!(out_file, "    Some(include_bytes!({:?}))", bios_path)?;
+                    } else {
+                        writeln!(out_file, "    None")?;
+                    };
+
+                    writeln!(out_file, "}}\n")?;
                 }
             }
         }
     }
-    writeln!(
-        out_file,
-        r#"
-pub fn get_dtb_binary() -> Option<&'static [u8]> {{ 
-    None
-}}
-    
-pub fn get_kernel_binary() -> Option<&'static [u8]> {{ 
-    None
-}}
 
-pub fn get_bios_binary() -> Option<&'static [u8]> {{ 
-    None
-}}
-"#
-    )?;
+    if !image_load_from_memory {
+        writeln!(
+            out_file,
+            r#"pub fn get_kernel_binary() -> Option<&'static [u8]> {{ "#
+        )?;
+        writeln!(out_file, "    None")?;
+        writeln!(out_file, "}}\n")?;
+        writeln!(
+            out_file,
+            r#"pub fn get_dtb_binary() -> Option<&'static [u8]> {{ "#
+        )?;
+        writeln!(out_file, "    None")?;
+        writeln!(out_file, "}}\n")?;
+        writeln!(
+            out_file,
+            r#"pub fn get_bios_binary() -> Option<&'static [u8]> {{ "#
+        )?;
+        writeln!(out_file, "    None")?;
+        writeln!(out_file, "}}")?;
+    }
     Ok(())
 }
 
 fn main() -> io::Result<()> {
     let platform = env::var("AX_PLATFORM").unwrap_or("".to_string());
     let platform_family = env::var("AX_PLATFORM").unwrap_or("".to_string());
-    let config_toml_paths = get_config_paths();
     println!("cargo:rustc-cfg=platform=\"{}\"", platform);
     println!("cargo:rustc-cfg=platform_family=\"{}\"", platform_family);
 
@@ -209,24 +224,24 @@ fn main() -> io::Result<()> {
                 writeln!(output_file, "    default_static_vm_configs()")?;
             } else {
                 writeln!(output_file, "    vec![")?;
-                for config_file in config_files {
+                for config_file in &config_files {
                     writeln!(output_file, "        r###\"{}\"###,", config_file.content)?;
                     println!(
                         "cargo:rerun-if-changed={}",
-                        PathBuf::from(config_file.path).display()
+                        PathBuf::from(config_file.path.clone()).display()
                     );
                 }
                 writeln!(output_file, "    ]")?;
+                writeln!(output_file, "}}\n")?;
+
+                // generate "load kernel and dtb images function"
+                generate_guest_img_loading_functions(output_file, config_files)?;
             }
         }
         Err(error) => {
             writeln!(output_file, "    compile_error!(\"{}\")", error)?;
+            writeln!(output_file, "}}\n")?;
         }
     }
-    writeln!(output_file, "}}")?;
-
-    // generate "load kernel and dtb images function"
-    generate_guest_img_loading_functions(output_file, config_toml_paths)?;
-
     Ok(())
 }
