@@ -113,7 +113,7 @@ fn load_vm_images_from_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
 
     // Load DTB image
     if let Some(buffer) = config::get_dtb_binary() {
-        load_vm_image_memory(
+        load_vm_image_from_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.dtb_load_addr.unwrap(),
             buffer.len(),
@@ -124,7 +124,7 @@ fn load_vm_images_from_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
 
     // Load BIOS image
     if let Some(buffer) = config::get_bios_binary() {
-        load_vm_image_memory(
+        load_vm_image_from_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.bios_load_addr.unwrap(),
             buffer.len(),
@@ -135,7 +135,7 @@ fn load_vm_images_from_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
 
     // Load kernel image.
     if let Some(buffer) = config::get_kernel_binary() {
-        load_vm_image_memory(
+        load_vm_image_from_memory(
             Vec::from(buffer).as_mut_ptr(),
             config.kernel_load_addr,
             buffer.len(),
@@ -149,7 +149,7 @@ fn load_vm_images_from_memory(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
     Ok(())
 }
 
-fn load_vm_image_memory(
+fn load_vm_image_from_memory(
     buffer: *mut u8,
     load_addr: usize,
     image_size: usize,
