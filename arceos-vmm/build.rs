@@ -102,11 +102,9 @@ fn generate_guest_img_loading_functions(
         }
     }
 
-    let mut image_load_from_memory = false;
+    let mut find_memory_image = false;
 
     for config_file in config_files {
-        // let config =
-        //     read_toml_file(config_file.content.as_str()).expect("failed to read config file");
         let config = config_file
             .content
             .parse::<Value>()
@@ -116,7 +114,7 @@ fn generate_guest_img_loading_functions(
                 if image_location == "memory" {
                     // Check if there are multiple VMs in the config file list to be loaded from memory.
                     // Cause we only support one VM to be loaded from memory at most.
-                    if image_load_from_memory {
+                    if find_memory_image {
                         writeln!(
                             out_file,
                             r#"pub fn error_msg() -> Option<&'static [u8]> {{ "#
@@ -125,7 +123,7 @@ fn generate_guest_img_loading_functions(
                         writeln!(out_file, "}}\n")?;
                         break;
                     } else {
-                        image_load_from_memory = true;
+                        find_memory_image = true;
                     }
 
                     writeln!(
@@ -177,7 +175,7 @@ fn generate_guest_img_loading_functions(
         }
     }
 
-    if !image_load_from_memory {
+    if !find_memory_image {
         writeln!(
             out_file,
             r#"pub fn get_kernel_binary() -> Option<&'static [u8]> {{ "#
