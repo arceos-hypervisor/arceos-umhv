@@ -88,7 +88,7 @@ fn open_output_file() -> fs::File {
 /// Only load the first config item, if there are multiple items in the config file.
 /// Other VMs are dynamically loaded from the file system by the first VM that starts.
 fn generate_guest_img_loading_functions(
-    mut out_file: fs::File,
+    out_file: &mut fs::File,
     config_files: Vec<ConfigFile>,
 ) -> io::Result<()> {
     // Convert relative path to absolute path
@@ -96,7 +96,7 @@ fn generate_guest_img_loading_functions(
         let path = Path::new(path);
         let configs_path = Path::new(configs_path).join(path);
         if path.is_relative() {
-            fs::canonicalize(&configs_path).unwrap_or_else(|_| path.to_path_buf())
+            fs::canonicalize(configs_path).unwrap_or_else(|_| path.to_path_buf())
         } else {
             path.to_path_buf()
         }
@@ -107,8 +107,10 @@ fn generate_guest_img_loading_functions(
     for config_file in config_files {
         // let config =
         //     read_toml_file(config_file.content.as_str()).expect("failed to read config file");
-        let config = config_file.content.parse::<Value>()
-            .expect("failed to parse config file" );
+        let config = config_file
+            .content
+            .parse::<Value>()
+            .expect("failed to parse config file");
         if let Some(image_location_val) = config.get("image_location") {
             if let Some(image_location) = image_location_val.as_str() {
                 if image_location == "memory" {
@@ -119,9 +121,7 @@ fn generate_guest_img_loading_functions(
                             out_file,
                             r#"pub fn error_msg() -> Option<&'static [u8]> {{ "#
                         )?;
-                        writeln!(out_file, 
-                            "    compile_error!(\"{}\")", 
-                            "ArceOS-Hypervisor currently only supports loading one guestVM image from memory")?;
+                        writeln!(out_file, "    compile_error!(\"ArceOS-Hypervisor currently only supports loading one guestVM image from memory\")")?;
                         writeln!(out_file, "}}\n")?;
                         break;
                     } else {
@@ -138,9 +138,8 @@ fn generate_guest_img_loading_functions(
                         // use include_bytes! load image
                         writeln!(out_file, "    Some(include_bytes!({:?}))", kernel_path)?;
                     } else {
-                        writeln!(out_file, 
-                            "    compile_error!(\"{}\")", 
-                            "Kernel image path is not provided if you want to compile the binary file together!")?;
+                        writeln!(out_file, "    compile_error!(\"Kernel image path is not provided if you want to compile the binary file together!\")"
+                            )?;
                     };
 
                     writeln!(out_file, "}}\n")?;
@@ -232,11 +231,11 @@ fn main() -> io::Result<()> {
                     );
                 }
                 writeln!(output_file, "    ]")?;
-                writeln!(output_file, "}}\n")?;
-
-                // generate "load kernel and dtb images function"
-                generate_guest_img_loading_functions(output_file, config_files)?;
             }
+            writeln!(output_file, "}}\n")?;
+
+            // generate "load kernel and dtb images function"
+            generate_guest_img_loading_functions(&mut output_file, config_files)?;
         }
         Err(error) => {
             writeln!(output_file, "    compile_error!(\"{}\")", error)?;

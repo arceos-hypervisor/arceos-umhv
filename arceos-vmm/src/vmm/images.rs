@@ -167,7 +167,7 @@ fn load_vm_image_memory(
         // copy data from memory
         unsafe {
             core::ptr::copy_nonoverlapping(
-                buffer.offset(buffer_pos as isize),
+                buffer.offset(buffer_pos.try_into().unwrap()),
                 (&mut region[0]) as *mut u8,
                 bytes_to_write,
             );
