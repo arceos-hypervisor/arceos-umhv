@@ -232,6 +232,10 @@ fn alloc_vcpu_task(vm: VMRef, vcpu: AxVCpuRef) -> AxTaskRef {
     axtask::spawn_task(vcpu_task)
 }
 
+// TEST
+#[percpu::def_percpu]
+static CNT: u64 = 0;
+
 /// The main routine for vCPU task.
 /// This function is the entry point for the vCPU tasks, which are spawned for each vCPU of a VM.
 ///
@@ -250,7 +254,8 @@ fn vcpu_run() {
 
     info!("VM[{}] Vcpu[{}] running...", vm.id(), vcpu.id());
 
-    let mut cnt = 0;
+    let cnt = unsafe { CNT.current_ref_mut_raw() };
+    *cnt = 0;
 
     loop {
         match vm.run_vcpu(vcpu_id, this_cpu_id()) {
@@ -276,10 +281,11 @@ fn vcpu_run() {
                             axtask::on_timer_tick();
                             check_events();
                             scheduler_next_event();
-                            cnt += 1;
-                            if cnt == 2 {
-                                cnt = 0;
-                                info!("yield now : hvip {:#x}", hvip::read().bits());
+                            let cnt = unsafe { CNT.current_ref_mut_raw() };
+                            *cnt += 1;
+                            if *cnt >= 2 {
+                                *cnt = 0;
+                                error!("yield now : hvip {:#x}", hvip::read().bits());
                                 axtask::yield_now();
                             }
                         }
