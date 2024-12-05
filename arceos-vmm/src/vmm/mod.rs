@@ -1,5 +1,6 @@
 mod config;
 mod images;
+mod timer;
 mod vcpus;
 mod vm_list;
 
