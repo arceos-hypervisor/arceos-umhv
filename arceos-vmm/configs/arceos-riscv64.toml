@@ -1,15 +1,15 @@
 id = 1
 name = "arceos"
 vm_type = 1
-cpu_num = 4
+cpu_num = 2
 # phys_cpu_sets = [15, 15]
-phys_cpu_sets = [0x7, 0x7, 0x7, 0x7]
+# phys_cpu_sets = [0x7, 0x7, 0x7, 0x7]
 # phys_cpu_sets = [0x7, 0x7]
-# phys_cpu_sets = [0x3, 0x3]
+phys_cpu_sets = [0x3, 0x3]
 # phys_cpu_sets = [1]
 entry_point = 0x8020_0000
-# kernel_path = "arceos-riscv64-parallel-debug.bin"
-kernel_path = "arceos-riscv64-parallel-trace-hartx4.bin"
+kernel_path = "arceos-riscv64-parallel-trace.bin"
+# kernel_path = "arceos-riscv64-parallel-trace-hartx4.bin"
 kernel_load_addr = 0x8020_0000
 # Memory regions with format (`base_paddr`, `size`, `flags`).
 memory_regions = [

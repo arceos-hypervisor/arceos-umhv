@@ -37,11 +37,15 @@ impl VmmTimerEvent {
 
 impl TimerEvent for VmmTimerEvent {
     fn callback(self, now: TimeValue) {
+        error!("callback 1");
         let vcpu = self.task.task_ext().vcpu.clone();
+        error!("callback 2");
         let to = vcpu.get_cpu_id();
+        error!("callback 3");
         match to {
             Some(to) => {
                 // TODO:给 to 发送附带参数的 IPI
+                error!("Sending!");
                 ipi_send_msg_by_core_id(to, IpiMessage::Timer(self));
             }
             _ => {
@@ -79,6 +83,7 @@ pub fn check_events() {
         if let Some((_deadline, event)) = event {
             error!("pick one {:#?} to handler!!!", _deadline);
             event.callback(now);
+            // error!("end pick---");
         } else {
             break;
         }
@@ -88,7 +93,7 @@ pub fn check_events() {
 pub fn scheduler_next_event() {
     let now_ns = axhal::time::monotonic_time_nanos();
     let deadline = now_ns + PERIODIC_INTERVAL_NANOS;
-    // error!("PHY deadline {} !!!", deadline);
+    error!("PHY deadline {} !!!", deadline);
     axhal::time::set_oneshot_timer(deadline);
 }
 
