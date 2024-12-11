@@ -1,8 +1,8 @@
 id = 1
 name = "linux-qemu"
 vm_type = 1
-cpu_num = 1
-phys_cpu_sets = [1]
+cpu_num = 2
+phys_cpu_sets = [1, 2]
 entry_point = 0x8008_0000
 kernel_load_addr = 0x8008_0000
 dtb_load_addr = 0x8000_0000
@@ -12,7 +12,7 @@ dtb_load_addr = 0x8000_0000
 image_location = "memory"
 kernel_path = "linux-6.6.62.bin"
 # kernel_path = "/home/hky/workspace/hypervisors/shyper/rtshyper/image/Image_vanilla"
-dtb_path = "linux-qemu.dtb"
+dtb_path = "linux-qemu-smp2.dtb"
 
 # load from file system
 # image_location = "fs"
@@ -25,7 +25,7 @@ dtb_path = "linux-qemu.dtb"
 # Memory regions with format (`base_paddr`, `size`, `flags`).
 memory_regions = [
     [0x8000_0000, 0x4000_0000, 0x7], # System RAM 1G 
-    [0x800_0000, 0x50_000, 0x17],     # intc@8000000
+    [0x800_0000, 0x50_000, 0x17],    # intc@8000000
     [0x900_0000, 0x1000, 0x17],      # pl011@9000000
     [0x901_0000, 0x1000, 0x17],      # pl031@9010000
     [0x903_0000, 0x1000, 0x17],      # pl061@9030000

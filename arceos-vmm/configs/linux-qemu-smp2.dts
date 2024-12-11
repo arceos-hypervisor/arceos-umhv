@@ -1,7 +1,7 @@
 /dts-v1/;
 
 / {
-	interrupt-parent = <0x8002>;
+	interrupt-parent = <0x8003>;
 	model = "linux,dummy-virt";
 	#size-cells = <0x02>;
 	#address-cells = <0x02>;
@@ -256,7 +256,7 @@
 	};
 
 	pl061@9030000 {
-		phandle = <0x8004>;
+		phandle = <0x8005>;
 		clock-names = "apb_pclk";
 		clocks = <0x8000>;
 		interrupts = <0x00 0x07 0x04>;
@@ -288,7 +288,7 @@
 	};
 
 	intc@8000000 {
-		phandle = <0x8002>;
+		phandle = <0x8003>;
 		interrupts = <0x01 0x09 0x04>;
 		reg = <0x00 0x8000000 0x00 0x10000 0x00 0x8010000 0x00 0x10000 0x00 0x8030000 0x00 0x10000 0x00 0x8040000 0x00 0x10000>;
 		compatible = "arm,cortex-a15-gic";
@@ -299,7 +299,7 @@
 		#interrupt-cells = <0x03>;
 
 		v2m@8020000 {
-			phandle = <0x8003>;
+			phandle = <0x8004>;
 			reg = <0x00 0x8020000 0x00 0x1000>;
 			msi-controller;
 			compatible = "arm,gic-v2m-frame";
@@ -315,17 +315,27 @@
 			socket0 {
 
 				cluster0 {
-
 					core0 {
-						cpu = <0x8001>;
+							cpu = <0x8002>;
+					};
+					core1 {
+							cpu = <0x8001>;
 					};
 				};
 			};
 		};
 
 		cpu@0 {
-			phandle = <0x8001>;
+			phandle = <0x8002>;
 			reg = <0x00>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a57";
+			device_type = "cpu";
+		};
+		cpu@1 {
+			phandle = <0x8001>;
+			reg = <0x01>;
+			enable-method = "psci";
 			compatible = "arm,cortex-a57";
 			device_type = "cpu";
 		};

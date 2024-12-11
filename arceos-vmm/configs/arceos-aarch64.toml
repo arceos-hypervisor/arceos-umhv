@@ -4,7 +4,9 @@ vm_type = 1
 cpu_num = 1
 phys_cpu_sets = [1]
 entry_point = 0x4008_0000
-kernel_path = "arceos-aarch64.bin"
+image_location = "memory"
+kernel_path = "/home/hky/workspace/arceos/arceos/examples/shell/shell_aarch64-qemu-virt.bin"
+# kernel_path = "linux-6.6.62.bin"
 kernel_load_addr = 0x4008_0000
 # ramdisk_path = ""
 # ramdisk_load_addr = 0
@@ -12,11 +14,12 @@ kernel_load_addr = 0x4008_0000
 # Memory regions with format (`base_paddr`, `size`, `flags`).
 memory_regions = [
     [0x4000_0000, 0x100_0000, 0x7],   # Low RAM		    16M 0b00111 R|W|EXECUTE
-    [0x800_0000, 0x10_000, 0x17],     # intc 		    4K  0b10111 R|W|DEVICE
-    [0x801_0000, 0x10_000, 0x17],     # intc 		    4K  0b10111 R|W|DEVICE
-    [0x900_0000, 0x1000, 0x17],       # pl011 (Uart)	4K  0b10111 R|W|DEVICE
-    [0x901_0000, 0x1000, 0x17],       # pl031 (timer)	4K  0b10111 R|W|DEVICE
-    [0xfed0_0000, 0x1000, 0x17],      # HPET 		    4K  0b10111 R|W|DEVICE
+    [0x800_0000, 0x10_000, 0x37],     # intc 		    4K  0b10111 R|W|DEVICE
+    [0x801_0000, 0x10_000, 0x37],     # intc 		    4K  0b10111 R|W|DEVICE
+    [0x900_0000, 0x1000, 0x37],       # pl011 (Uart)	4K  0b10111 R|W|DEVICE
+    [0x901_0000, 0x1000, 0x37],       # pl031 (timer)	4K  0b10111 R|W|DEVICE
+    [0xfed0_0000, 0x1000, 0x37],      # HPET 		    4K  0b10111 R|W|DEVICE
+    [0xa00_0000, 0x4000, 0x37],
 ]
 
 # Emu_devices

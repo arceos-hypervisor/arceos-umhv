@@ -50,7 +50,7 @@ GRAPHIC ?= n
 # To keep consistent with the latest `main` branch of ArceOS.
 BUS ?= pci
 
-DISK_IMG ?= disk.img
+DISK_IMG ?= /home/hky/workspace/Linux/ubuntu-22.04-rootfs_ext4.img
 QEMU_LOG ?= n
 NET_DUMP ?= n
 NET_DEV ?= user
