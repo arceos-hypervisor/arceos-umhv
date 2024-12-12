@@ -24,6 +24,9 @@ pub fn init() {
     // Initialize guest VM according to config file.
     config::init_guest_vms();
 
+    // Initialize timer list
+    timer::init();
+
     // Setup vcpus, spawn axtask for primary VCpu.
     info!("Setting up vcpus...");
     for vm in vm_list::get_vm_list() {
