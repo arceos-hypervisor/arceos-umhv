@@ -54,6 +54,7 @@ version = "0.1.0"
 dependencies = [
  "arrayvec",
  "axaddrspace",
+ "axdevice",
  "axerrno",
  "axstd",
  "axvcpu 0.1.0",
@@ -184,7 +185,6 @@ dependencies = [
 [[package]]
 name = "axdevice"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axdevice.git#51bf078bb980af35c4dc4ef08e4077ade1073453"
 dependencies = [
  "axaddrspace",
  "axdevice_base",
@@ -193,6 +193,7 @@ dependencies = [
  "log",
  "memory_addr",
  "serde",
+ "timer_list",
 ]
 
 [[package]]

@@ -21,3 +21,4 @@ arm_vcpu = { git = "https://github.com/arceos-hypervisor/arm_vcpu.git" }
 x86_vcpu = { git = "https://github.com/arceos-hypervisor/x86_vcpu.git" }
 # riscv_vcpu = { git = "https://github.com/arceos-hypervisor/riscv_vcpu.git" }
 riscv_vcpu = { path = "../riscv_vcpu" }
+axdevice = { path = "../axdevice" }

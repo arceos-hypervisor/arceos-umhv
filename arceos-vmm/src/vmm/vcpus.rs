@@ -10,12 +10,14 @@ use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue, on_timer_tick};
 use axvcpu::{AxVCpuExitReason, SbiFunction, VCpuState};
 use axvm::AxVCpuRef;
+use axdevice::AxVmTimer;
+// use axdevice::VmmTimerEvent;
 
 use api::sys::ax_terminate;
 use api::task::{AxCpuMask, ax_set_current_affinity};
 
 use crate::task::TaskExt;
-use crate::vmm::timers::{check_events, register_timer, scheduler_next_event, VmmTimerEvent};
+use crate::vmm::timers::{check_events, register_timer, scheduler_next_event};
 use crate::vmm::VMRef;
 
 use riscv::register::hvip;
@@ -235,8 +237,8 @@ fn alloc_vcpu_task(vm: VMRef, vcpu: AxVCpuRef) -> AxTaskRef {
 // TEST
 #[percpu::def_percpu]
 static CNT: u64 = 0;
-#[percpu::def_percpu]
-static AFFINITY: usize = 0;
+// #[percpu::def_percpu]
+// static AFFINITY: usize = 0;
 
 /// The main routine for vCPU task.
 /// This function is the entry point for the vCPU tasks, which are spawned for each vCPU of a VM.
@@ -258,8 +260,8 @@ fn vcpu_run() {
 
     let cnt = unsafe { CNT.current_ref_mut_raw() };
     *cnt = 0;
-    let affinity = unsafe { AFFINITY.current_ref_mut_raw() };
-    *affinity = this_cpu_id();
+    // let affinity = unsafe { AFFINITY.current_ref_mut_raw() };
+    // *affinity = this_cpu_id();
 
     loop {
         match vm.run_vcpu(vcpu_id, this_cpu_id()) {
@@ -286,14 +288,14 @@ fn vcpu_run() {
                             check_events();
                             scheduler_next_event();
 
-                            let affinity = unsafe { AFFINITY.current_ref_mut_raw() };
-                            *affinity += 1;
-                            if *affinity >= 2 {
-                                *affinity = 0
-                            }
+                            // let affinity = unsafe { AFFINITY.current_ref_mut_raw() };
+                            // *affinity += 1;
+                            // if *affinity >= 2 {
+                            //     *affinity = 0
+                            // }
 
-                            error!("change affinity to {}!", *affinity);
-                            ax_set_current_affinity(AxCpuMask::one_shot(*affinity));
+                            // error!("change affinity to {}!", *affinity);
+                            // ax_set_current_affinity(AxCpuMask::one_shot(*affinity));
 
                             let cnt = unsafe { CNT.current_ref_mut_raw() };
                             *cnt += 1;
@@ -344,11 +346,11 @@ fn vcpu_run() {
                             // let vcpu = curr.task_ext().vcpu.clone();
                             // let tid = vcpu.id();
                             vm.denotify(vcpu_id, 5);
-                            register_timer(deadline, VmmTimerEvent::new(move |_| {
+                            register_timer(deadline, move |_| {
                                 // error!("VCPU{}:{} timer callback", vcpu_id, tid);
                                 vm.notify(vcpu_id, 5).unwrap();
                                 // vm.change_state(vcpu_id, true);
-                            }));
+                            });
                         }
                         _ => {
                             todo!();
