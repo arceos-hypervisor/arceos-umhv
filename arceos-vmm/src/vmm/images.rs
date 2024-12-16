@@ -12,7 +12,9 @@ pub fn load_vm_images(config: AxVMCrateConfig, vm: VMRef) -> AxResult {
         Some("memory") => load_vm_images_from_memory(config, vm),
         #[cfg(feature = "fs")]
         Some("fs") => fs::load_vm_images_from_filesystem(config, vm),
-        _ => unimplemented!(),
+        _ => unimplemented!(
+            "Check your \"image_location\" in config.toml, \"memory\" and \"fs\" are supported,\n NOTE: \"fs\" feature should be enabled if you want to load images from filesystem. (APP_FEATURES=fs)"
+        ),
     }
 }
 
@@ -91,6 +93,8 @@ mod fs {
     use std::fs::File;
 
     use axerrno::{ax_err, ax_err_type, AxResult};
+
+    use super::*;
 
     /// Loads the VM image files from the filesystem
     /// into the guest VM's memory space based on the VM configuration.

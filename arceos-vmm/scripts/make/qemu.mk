@@ -1,6 +1,6 @@
 # QEMU arguments
 
-QEMU := /home/hky/toolchains/qemu/build/qemu-system-$(ARCH)
+QEMU := qemu-system-$(ARCH)
 
 TELNET_PORT ?= 4321
 SECOND_SERIAL ?= n
@@ -24,7 +24,7 @@ qemu_args-riscv64 := \
 
 qemu_args-aarch64 := \
   -cpu cortex-a72 \
-  -machine virt,virtualization=on,gic-version=2,iommu=smmuv3 \
+  -machine virt,virtualization=on,gic-version=2 \
   -kernel $(OUT_BIN)
 
 qemu_args-y := -m 8G -smp $(SMP) $(qemu_args-$(ARCH))
