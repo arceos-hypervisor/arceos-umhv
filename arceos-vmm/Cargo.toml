@@ -28,7 +28,6 @@ axstd = { workspace = true, features = [
 axvm = { workspace = true }
 axvcpu = { workspace = true }
 axaddrspace = { workspace = true }
-axdevice = { workspace = true }
 
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
 crate_interface = "0.1"
