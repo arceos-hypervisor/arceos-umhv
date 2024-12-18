@@ -54,7 +54,6 @@ version = "0.1.0"
 dependencies = [
  "arrayvec",
  "axaddrspace",
- "axdevice",
  "axerrno",
  "axstd",
  "axvcpu 0.1.0",
