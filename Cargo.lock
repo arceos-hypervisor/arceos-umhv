@@ -53,10 +53,10 @@ name = "arceos-vmm"
 version = "0.1.0"
 dependencies = [
  "arrayvec",
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt)",
  "axerrno",
  "axstd",
- "axvcpu",
+ "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git?branch=inject_interrupt)",
  "axvm",
  "bitflags 2.6.0",
  "crate_interface",
@@ -76,7 +76,7 @@ dependencies = [
 [[package]]
 name = "arceos_api"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -86,6 +86,7 @@ dependencies = [
  "axfs",
  "axhal",
  "axio",
+ "axipi",
  "axlog",
  "axruntime",
  "axsync",
@@ -95,7 +96,7 @@ dependencies = [
 [[package]]
 name = "arm_gicv2"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arm_gicv2#dfe5f164b94cdd07081c2fe74a0cfe4bef2852c9"
+source = "git+https://github.com/arceos-hypervisor/arm_gicv2?branch=sgi#956665adcdc6b09a28078db09ad3f09ed41af80b"
 dependencies = [
  "tock-registers",
 ]
@@ -115,9 +116,9 @@ version = "0.1.0"
 source = "git+https://github.com/arceos-hypervisor/arm_vcpu.git#63fbc026fb730fdde2a81d6abc67666551bd2d9d"
 dependencies = [
  "aarch64-cpu",
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git)",
  "axerrno",
- "axvcpu",
+ "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git)",
  "log",
  "numeric-enum-macro",
  "percpu",
@@ -135,6 +136,24 @@ name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
+
+[[package]]
+name = "axaddrspace"
+version = "0.1.0"
+source = "git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt#2c154f34c4dac7c6c1ffab19e2a3298d8e62618e"
+dependencies = [
+ "axerrno",
+ "bit_field",
+ "bitflags 2.6.0",
+ "cfg-if",
+ "lazyinit",
+ "log",
+ "memory_addr",
+ "memory_set",
+ "numeric-enum-macro",
+ "page_table_entry",
+ "page_table_multiarch",
+]
 
 [[package]]
 name = "axaddrspace"
@@ -157,7 +176,7 @@ dependencies = [
 [[package]]
 name = "axalloc"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "allocator",
  "axerrno",
@@ -170,7 +189,7 @@ dependencies = [
 [[package]]
 name = "axconfig"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "serde",
  "toml_edit 0.22.22",
@@ -179,9 +198,9 @@ dependencies = [
 [[package]]
 name = "axdevice"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axdevice.git#51bf078bb980af35c4dc4ef08e4077ade1073453"
+source = "git+https://github.com/arceos-hypervisor/axdevice.git?branch=inject_interrupt#391eeaddedec62a14c03762fbd810baee206408f"
 dependencies = [
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt)",
  "axdevice_base",
  "axerrno",
  "cfg-if",
@@ -193,11 +212,12 @@ dependencies = [
 [[package]]
 name = "axdevice_base"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axdevice_crates.git#24ebdf92b7fb5fbae08816094910cd30922550f0"
+source = "git+https://github.com/arceos-hypervisor/axdevice_crates.git?branch=inject_interrupt#46a16b71b3183c0ce631a7076a04f9f5aef175c9"
 dependencies = [
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt)",
  "axerrno",
  "cfg-if",
+ "cpumask",
  "memory_addr",
  "serde",
 ]
@@ -205,7 +225,7 @@ dependencies = [
 [[package]]
 name = "axdriver"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -262,22 +282,24 @@ dependencies = [
 [[package]]
 name = "axfeat"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axalloc",
  "axdriver",
  "axfs",
  "axhal",
+ "axipi",
  "axlog",
  "axruntime",
  "axsync",
  "axtask",
+ "kspin",
 ]
 
 [[package]]
 name = "axfs"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axdriver",
  "axdriver_block",
@@ -330,7 +352,7 @@ dependencies = [
 [[package]]
 name = "axhal"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "aarch64-cpu",
  "arm_gicv2",
@@ -374,9 +396,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "axipi"
+version = "0.1.0"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
+dependencies = [
+ "axconfig",
+ "axhal",
+ "kspin",
+ "lazyinit",
+ "log",
+ "percpu",
+]
+
+[[package]]
 name = "axlog"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "cfg-if",
  "crate_interface",
@@ -387,7 +422,7 @@ dependencies = [
 [[package]]
 name = "axmm"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axconfig",
  "axerrno",
@@ -401,13 +436,14 @@ dependencies = [
 [[package]]
 name = "axruntime"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axalloc",
  "axconfig",
  "axdriver",
  "axfs",
  "axhal",
+ "axipi",
  "axlog",
  "axmm",
  "axtask",
@@ -420,7 +456,7 @@ dependencies = [
 [[package]]
 name = "axstd"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "arceos_api",
  "axerrno",
@@ -432,7 +468,7 @@ dependencies = [
 [[package]]
 name = "axsync"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axtask",
  "kspin",
@@ -441,7 +477,7 @@ dependencies = [
 [[package]]
 name = "axtask"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm#9a845553df23944a6a3a0dd3e45df23c15f26465"
+source = "git+https://github.com/arceos-hypervisor/arceos.git?branch=vmm_inject_interrupt#c47d88b40ba6eb2757fc6227adcc600813061bce"
 dependencies = [
  "axconfig",
  "axhal",
@@ -461,9 +497,20 @@ dependencies = [
 [[package]]
 name = "axvcpu"
 version = "0.1.0"
+source = "git+https://github.com/arceos-hypervisor/axvcpu.git?branch=inject_interrupt#84595494ea6931fc4d58c67daa27df78be4a7e56"
+dependencies = [
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt)",
+ "axerrno",
+ "memory_addr",
+ "percpu",
+]
+
+[[package]]
+name = "axvcpu"
+version = "0.1.0"
 source = "git+https://github.com/arceos-hypervisor/axvcpu.git#1e9fa523378872ed0c947e2abd4699ed2d5025f2"
 dependencies = [
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git)",
  "axerrno",
  "memory_addr",
  "percpu",
@@ -472,15 +519,16 @@ dependencies = [
 [[package]]
 name = "axvm"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvm.git#6092edec74692767b51a9648228a050bae5e113b"
+source = "git+https://github.com/arceos-hypervisor/axvm.git?branch=inject_interrupt#2f5a5565112e66d3e26473d29c6994464d9b88fb"
 dependencies = [
  "arm_vcpu",
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt)",
  "axdevice",
  "axdevice_base",
  "axerrno",
- "axvcpu",
+ "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git?branch=inject_interrupt)",
  "cfg-if",
+ "cpumask",
  "log",
  "memory_addr",
  "page_table_entry",
@@ -892,9 +940,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "percpu"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7156fa6801337eb593af0c6d664b92de216c5e53e761e1eb6e119cff542d195"
+checksum = "66a1cb7a2ae1e4ada6e7fd9e46b6b2024353f28d17661d480c8238927571cbd3"
 dependencies = [
  "cfg-if",
  "percpu_macros",
@@ -1020,9 +1068,9 @@ name = "riscv_vcpu"
 version = "0.1.0"
 source = "git+https://github.com/arceos-hypervisor/riscv_vcpu.git#e3c992967219f10daadd0a71f6187641f381f563"
 dependencies = [
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git)",
  "axerrno",
- "axvcpu",
+ "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git)",
  "bit_field",
  "bitflags 2.6.0",
  "cfg-if",
@@ -1383,11 +1431,11 @@ dependencies = [
 [[package]]
 name = "x86_vcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/x86_vcpu.git#dc088685f76f83d52378d2fe78952cde3c187da9"
+source = "git+https://github.com/arceos-hypervisor/x86_vcpu.git?branch=inject_interrupt#14eb571aeda58fa13d9a2633fdca10608f9e8971"
 dependencies = [
- "axaddrspace",
+ "axaddrspace 0.1.0 (git+https://github.com/arceos-hypervisor/axaddrspace.git?branch=inject_interrupt)",
  "axerrno",
- "axvcpu",
+ "axvcpu 0.1.0 (git+https://github.com/arceos-hypervisor/axvcpu.git?branch=inject_interrupt)",
  "bit_field",
  "bitflags 2.6.0",
  "cfg-if",

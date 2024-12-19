@@ -1,4 +1,4 @@
-use std::os::arceos;
+use std::{boxed::Box, os::arceos::{self, modules::{axhal::cpu::current_task_ptr, axipi::{self, IPIEventFn}, axtask::{self, TaskExtRef}}}};
 
 use page_table_multiarch::PagingHandler;
 
@@ -6,6 +6,8 @@ use arceos::modules::axhal;
 use axaddrspace::{HostPhysAddr, HostVirtAddr};
 use axvcpu::AxVCpuHal;
 use axvm::{AxVMHal, AxVMPerCpu};
+
+use crate::vmm;
 
 /// Implementation for `AxVMHal` trait.
 pub struct AxVMHalImpl;
@@ -20,6 +22,33 @@ impl AxVMHal for AxVMHalImpl {
     fn current_time_nanos() -> u64 {
         axhal::time::monotonic_time_nanos()
     }
+    
+    fn current_vm_id() -> usize {
+        axtask::current().task_ext().vm.id()
+    }
+    
+    fn current_vcpu_id() -> usize {
+        axtask::current().task_ext().vcpu.id()
+    }
+    
+    fn current_pcpu_id() -> usize {
+        axhal::cpu::this_cpu_id()
+    }
+}
+
+pub fn vcpu_resides_on(vm_id: usize, vcpu_id: usize) -> usize {
+    todo!()
+}
+
+pub fn inject_irq_to_vcpu_remotely(
+    vm_id: usize,
+    vcpu_id: usize,
+    irq: usize,
+    pcpu_id: usize
+) {
+    vmm::with_vm_and_vcpu_on_pcpu(vm_id, vcpu_id, move |_, vcpu| {
+        vcpu.inject_interrupt(irq);
+    });
 }
 
 pub struct AxVCpuHalImpl;
