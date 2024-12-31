@@ -281,15 +281,7 @@ fn vcpu_run() {
                         "VM[{}]'s VCpu[{}] try to boot target_cpu [{}] entry_point={:x} arg={:#x}",
                         vm_id, vcpu_id, target_cpu, entry_point, arg
                     );
-                    #[cfg(not(platform = "aarch64-bsta1000b-virt-hv"))]
                     vcpu_on(vm.clone(), target_cpu as _, entry_point, arg as _);
-                    #[cfg(platform = "aarch64-bsta1000b-virt-hv")]
-                    vcpu_on(
-                        vm.clone(),
-                        ((target_cpu / 256) as usize).try_into().unwrap(),
-                        entry_point,
-                        arg as _,
-                    );
                     vcpu.set_gpr(0, 0);
                 }
                 AxVCpuExitReason::SystemDown => {
