@@ -9,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86_64, riscv64, aarch64]
-        rust-toolchain: [nightly, nightly-2024-05-02]
+        rust-toolchain: [nightly-2024-12-25, nightly]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
