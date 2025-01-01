@@ -24,14 +24,15 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
   endif
   ifeq ($(APP_TYPE), c)
     $(if $(V), $(info CFLAGS: "$(CFLAGS)") $(info LDFLAGS: "$(LDFLAGS)"))
-  else
-    $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
-    export RUSTFLAGS
+  else ifeq ($(APP_TYPE), rust)
+    RUSTFLAGS += $(RUSTFLAGS_LINK_ARGS)
   endif
+  $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
+  export RUSTFLAGS
 endif
 
-_cargo_build:
-	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
+_cargo_build: oldconfig
+	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLAT_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
 	$(call cargo_build,--manifest-path $(APP)/Cargo.toml,$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))
 	@cp $(rust_elf) $(OUT_ELF)

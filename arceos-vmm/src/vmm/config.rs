@@ -1,6 +1,6 @@
 use axvm::config::{AxVMConfig, AxVMCrateConfig};
 
-use crate::vmm::{images::load_vm_images, vm_list::push_vm, VM};
+use crate::vmm::{VM, images::load_vm_images, vm_list::push_vm};
 
 pub mod config {
     use alloc::vec::Vec;
@@ -9,20 +9,12 @@ pub mod config {
     #[allow(dead_code)]
     pub fn default_static_vm_configs() -> Vec<&'static str> {
         vec![
-            // #[cfg(target_arch = "x86_64")]
-            // core::include_str!("../../configs/nimbos-x86_64.toml"),
             #[cfg(target_arch = "x86_64")]
-            core::include_str!("../../configs/arceos-x86_64.toml"),
-            // #[cfg(target_arch = "aarch64")]
-            // core::include_str!("../../configs/nimbos-aarch64.toml"),
-            // #[cfg(target_arch = "aarch64")]
-            // core::include_str!("../../configs/rk3588-aarch64.toml"),
+            core::include_str!("../../configs/vms/nimbos-x86_64.toml"),
             #[cfg(target_arch = "aarch64")]
-            core::include_str!("../../configs/arceos-aarch64.toml"),
-            // #[cfg(target_arch = "riscv64")]
-            // core::include_str!("../../configs/nimbos-riscv64.toml"),
+            core::include_str!("../../configs/vms/nimbos-aarch64.toml"),
             #[cfg(target_arch = "riscv64")]
-            core::include_str!("../../configs/arceos-riscv64.toml"),
+            core::include_str!("../../configs/vms/nimbos-riscv64.toml"),
         ]
     }
 
