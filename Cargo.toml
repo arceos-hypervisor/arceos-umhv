@@ -8,6 +8,7 @@ lto = true
 
 [workspace.dependencies]
 axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
+axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_rebase" }
 
 axvm = { git = "https://github.com/arceos-hypervisor/axvm.git", branch = "edition2024" }
 axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", branch = "update_toolchain" }
