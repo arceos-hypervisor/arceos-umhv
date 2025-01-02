@@ -180,14 +180,14 @@ gdb:
 	  -ex 'b rust_entry' \
 	  -ex 'disp /16i $$pc'
 
-clippy:
+clippy: oldconfig
 ifeq ($(origin ARCH), command line)
 	$(call cargo_clippy,--target $(TARGET))
 else
 	$(call cargo_clippy)
 endif
 
-doc:
+doc: oldconfig
 	$(call cargo_doc)
 
 doc_check_missing:

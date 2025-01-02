@@ -115,6 +115,7 @@ dependencies = [
  "axvm",
  "bitflags 2.6.0",
  "crate_interface",
+ "lazyinit",
  "log",
  "memory_addr",
  "page_table_entry",

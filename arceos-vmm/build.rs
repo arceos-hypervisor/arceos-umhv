@@ -119,7 +119,10 @@ fn generate_guest_img_loading_functions(
                             out_file,
                             r#"pub fn error_msg() -> Option<&'static [u8]> {{ "#
                         )?;
-                        writeln!(out_file, "    compile_error!(\"ArceOS-Hypervisor currently only supports loading one guestVM image from memory\")")?;
+                        writeln!(
+                            out_file,
+                            "    compile_error!(\"ArceOS-Hypervisor currently only supports loading one guestVM image from memory\")"
+                        )?;
                         writeln!(out_file, "}}\n")?;
                         break;
                     } else {
@@ -136,8 +139,10 @@ fn generate_guest_img_loading_functions(
                         // use include_bytes! load image
                         writeln!(out_file, "    Some(include_bytes!({:?}))", kernel_path)?;
                     } else {
-                        writeln!(out_file, "    compile_error!(\"Kernel image path is not provided if you want to compile the binary file together!\")"
-                            )?;
+                        writeln!(
+                            out_file,
+                            "    compile_error!(\"Kernel image path is not provided if you want to compile the binary file together!\")"
+                        )?;
                     };
 
                     writeln!(out_file, "}}\n")?;

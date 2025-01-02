@@ -28,7 +28,10 @@ define cargo_build
   $(call run_cmd,cargo build,$(build_args) $(1) --features "$(strip $(2))")
 endef
 
-clippy_args := -A clippy::new_without_default -A unsafe_op_in_unsafe_fn
+clippy_args := -A clippy::new_without_default \
+   -A unsafe_op_in_unsafe_fn \
+   -A static_mut_refs # Check `VM_VCPU_TASK_WAIT_QUEUE` in `arceos-vmm/src/vmm/vcpus.rs`
+   #  We need to find a better data structure to replace the `static mut`.
 
 define cargo_clippy
   $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog $(1) $(verbose) -- $(clippy_args))
