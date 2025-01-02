@@ -86,10 +86,10 @@ $ make ACCEL=n ARCH=aarch64 LOG=info VM_CONFIGS=configs/vms/nimbos-aarch64.toml 
 # riscv64 for nimbos
 $ make ARCH=riscv64 defconfig
 $ make ACCEL=n ARCH=riscv64 LOG=info VM_CONFIGS=configs/vms/nimbos-riscv64.toml APP_FEATURES=fs run
-# aarch64 for Linux
-$ make ARCH=aarch64 VM_CONFIGS=configs/vms/linux-qemu-aarch64.toml LOG=debug BUS=mmio NET=y DISK_IMG=ubuntu-22.04-rootfs_ext4.img run
+# aarch64 for Linux (remember to change `phys-memory-size` in `arceos-vmm/configs/platforms/aarch64-qemu-virt-hv.toml` as `0x2_0000_0000` (8G))
+$ make ARCH=aarch64 VM_CONFIGS=configs/vms/linux-qemu-aarch64.toml LOG=debug BUS=mmio NET=y DISK_IMG=ubuntu-22.04-rootfs_ext4.img FEATURES=page-alloc-64g MEM=8g run
 # aarch64 for Linux SMP=2
-$ make ARCH=aarch64 VM_CONFIGS=configs/vms/linux-qemu-aarch64-smp2.toml LOG=debug BUS=mmio NET=y DISK_IMG=ubuntu-22.04-rootfs_ext4.img BLK=y SMP=2 run
+$ make ARCH=aarch64 VM_CONFIGS=configs/vms/linux-qemu-aarch64-smp2.toml LOG=debug BUS=mmio NET=y DISK_IMG=ubuntu-22.04-rootfs_ext4.img BLK=y SMP=2 FEATURES=page-alloc-64g MEM=8g run
 ```
 
 ### Demo Output

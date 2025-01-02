@@ -109,6 +109,7 @@ name = "arceos-vmm"
 version = "0.1.0"
 dependencies = [
  "axaddrspace",
+ "axconfig",
  "axerrno",
  "axstd",
  "axvcpu",

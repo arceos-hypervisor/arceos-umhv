@@ -30,7 +30,7 @@ use std::{
 
 use toml::Value;
 
-static CONFIGS_DIR_PATH: &str = "configs";
+static CONFIGS_DIR_PATH: &str = "configs/vms";
 
 /// A configuration file that has been read from disk.
 struct ConfigFile {
@@ -253,8 +253,6 @@ fn main() -> io::Result<()> {
 }
 
 fn gen_linker_script(arch: &str, platform: &str) -> io::Result<()> {
-    use axstd::os::arceos::modules::axconfig;
-
     let fname = format!("linker_{}.lds", platform);
     let output_arch = if arch == "x86_64" {
         "i386:x86-64"

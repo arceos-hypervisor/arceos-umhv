@@ -40,4 +40,4 @@ percpu = { version = "0.1.4", features = ["arm-el2"] }
 
 [build-dependencies]
 toml = { git = "https://github.com/arceos-hypervisor/toml.git", branch = "no_std" }
-axstd = { workspace = true }
+axconfig = { workspace = true }
