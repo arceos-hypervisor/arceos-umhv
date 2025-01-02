@@ -45,5 +45,5 @@ jobs:
           export ACCEL=n
         fi
         export DISK_IMG="${{ github.workspace }}/disk-${{ matrix.arch }}.img"
-        export VM_CONFIGS="$(pwd)/arceos-vmm/configs/nimbos-${{ matrix.arch }}.toml"
+        export VM_CONFIGS="$(pwd)/arceos-vmm/configs/vms/nimbos-${{ matrix.arch }}.toml"
         make -C arceos-vmm ARCH=${{ matrix.arch }} DISK_IMG=${DISK_IMG} LOG=info BLK=y ACCEL=${ACCEL} VM_CONFIGS=${VM_CONFIGS} run
