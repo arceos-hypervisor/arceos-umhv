@@ -1,5 +1,6 @@
 mod config;
 mod images;
+mod timer;
 mod vcpus;
 mod vm_list;
 
@@ -27,6 +28,9 @@ static RUNNING_VM_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub fn init() {
     // Initialize guest VM according to config file.
     config::init_guest_vms();
+
+    // Initialize timer list
+    timer::init();
 
     // Setup vcpus, spawn axtask for primary VCpu.
     info!("Setting up vcpus...");

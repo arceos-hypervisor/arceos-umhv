@@ -1,17 +1,19 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+use cpumask::CpuMask;
 
 use std::os::arceos::api;
 use std::os::arceos::modules::axtask;
 
 use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
-use axvcpu::{AxVCpuExitReason, VCpuState};
+use axvcpu::{AxVCpuExitReason, VCpuState, SbiFunction};
 
 use api::sys::ax_terminate;
 use api::task::AxCpuMask;
 
 use crate::task::TaskExt;
+use crate::vmm::timer::{check_events, register_timer, scheduler_next_event, VmmTimerEvent};
 use crate::vmm::{VCpuRef, VMRef};
 
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
@@ -273,6 +275,25 @@ fn vcpu_run() {
                 }
                 AxVCpuExitReason::ExternalInterrupt { vector } => {
                     debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                    match vector {
+                        10 => {
+                            // riscv timer
+                            // error!("external timer handle");
+                            axtask::on_timer_tick();
+                            check_events();
+                            scheduler_next_event();
+                            // let cnt = unsafe { CNT.current_ref_mut_raw() };
+                            // *cnt += 1;
+                            // if *cnt >= 2 {
+                            //     *cnt = 0;
+                            //     error!("yield now : hvip {:#x}", hvip::read().bits());
+                            //     axtask::yield_now();
+                            // }
+                        }
+                        _ => {
+                            todo!()
+                        }
+                    }
                 }
                 AxVCpuExitReason::Halt => {
                     debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
@@ -301,6 +322,44 @@ fn vcpu_run() {
                 AxVCpuExitReason::SystemDown => {
                     warn!("VM[{}] run VCpu[{}] SystemDown", vm_id, vcpu_id);
                     ax_terminate()
+                }
+                AxVCpuExitReason::SbiCall(func) => {
+                    match func {
+                        SbiFunction::SetTimer { deadline  } => {
+                            // info!("VCPU{} RISCV SbiCall SetTimer in {}", vcpu_id, deadline);
+                            let vm = curr.task_ext().vm.clone();
+                            // let vcpu = curr.task_ext().vcpu.clone();
+                            // let tid = vcpu.id();
+                            
+                            register_timer(deadline, VmmTimerEvent::new(move |_| {
+                                // error!("VCPU{}:{} timer callback", vcpu_id, tid);
+                                let mut cpumask = CpuMask::<64>::new();
+                                cpumask.set(vcpu_id, true);
+                                vm.inject_interrupt_to_vcpu(cpumask, 5).unwrap();
+                                // vm.change_state(vcpu_id, true);
+                            }));
+                        }
+                        _ => {
+                            todo!();
+                        }
+                    }
+                }
+                AxVCpuExitReason::Wfi => {
+                    todo!("wfi");
+                    // cnt = 0;
+                    // vm.change_state(vcpu_id, false);
+                    // loop {
+                    //     if vm.state(vcpu_id) {
+                    //         info!("VCPU{} runnable, cnt = {}", vcpu_id, cnt);
+                    //         break;
+                    //     }
+                    //     axtask::yield_now();
+                    // }
+                    // wait_for(vm_id, || {
+                    //     let res = vm.state(vcpu_id);
+                    //     info!("state res: {}", res);
+                    //     res
+                    // });
                 }
                 _ => {
                     warn!("Unhandled VM-Exit");

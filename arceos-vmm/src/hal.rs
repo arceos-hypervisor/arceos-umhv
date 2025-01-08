@@ -1,4 +1,4 @@
-use std::{boxed::Box, os::arceos::{self, modules::{axhal::cpu::current_task_ptr, axipi::{self, IPIEventFn}, axtask::{self, TaskExtRef}}}};
+use std::{boxed::Box, os::arceos::{self, modules::{axhal::cpu::current_task_ptr, axipi::{self, IPIEvent}, axtask::{self, TaskExtRef}}}};
 
 use page_table_multiarch::PagingHandler;
 
