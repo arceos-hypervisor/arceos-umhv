@@ -74,45 +74,8 @@ pub fn scheduler_next_event() {
     axhal::time::set_oneshot_timer(deadline);
 }
 
-pub fn init() {
+pub fn init_percpu() {
     info!("Initing HV Timer...");
-
-    use std::os::arceos;
-    use arceos::api::config;
-    use arceos::api::task::{ax_set_current_affinity, AxCpuMask};
-    use arceos::modules::axhal::cpu::this_cpu_id;
-
-    use std::thread;
-
-    use core::sync::atomic::AtomicUsize;
-    use core::sync::atomic::Ordering;
-
-    static CORES: AtomicUsize = AtomicUsize::new(0);
-
-    for cpu_id in 0..config::SMP {
-        // info!("spawning CPU{} init task ...", cpu_id);
-        thread::spawn(move || {
-            // Initialize cpu affinity here.
-            assert!(
-                ax_set_current_affinity(AxCpuMask::one_shot(cpu_id)).is_ok(),
-                "Initialize CPU affinity failed!"
-            );
-
-            info!("Init HV timer in CPU{}", cpu_id);
-
-            let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
-            timer_list.init_once(SpinNoIrq::new(TimerList::new()));
-
-            let _ = CORES.fetch_add(1, Ordering::Release);
-
-            thread::yield_now();
-        });
-    }
-
-    thread::yield_now();
-
-    // Wait for all cores
-    while CORES.load(Ordering::Acquire) != config::SMP {
-        core::hint::spin_loop();
-    }
+    let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
+    timer_list.init_once(SpinNoIrq::new(TimerList::new()));
 }

@@ -115,6 +115,7 @@ pub(crate) fn enable_virtualization() {
             percpu
                 .hardware_enable()
                 .expect("Failed to enable virtualization");
+            vmm::init_timer_percpu();
 
             info!("Hardware virtualization support enabled on core {}", cpu_id);
 
