@@ -1,6 +1,6 @@
-OUTPUT_ARCH(riscv)
+OUTPUT_ARCH(%ARCH%)
 
-BASE_ADDRESS = 0xffffffc080200000;
+BASE_ADDRESS = %KERNEL_BASE%;
 
 ENTRY(_start)
 SECTIONS
@@ -54,7 +54,7 @@ SECTIONS
         _percpu_load_start = .;
         *(.percpu .percpu.*)
         _percpu_load_end = .;
-        . = _percpu_load_start + ALIGN(64) * 1;
+        . = _percpu_load_start + ALIGN(64) * %SMP%;
     }
     . = _percpu_end;
 

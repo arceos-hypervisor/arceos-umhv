@@ -8,6 +8,7 @@ lto = true
 
 [workspace.dependencies]
 axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_inject_interrupt", features = ["ipi", "smp"] }
+axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_inject_interrupt" }
 
 axvm = { git = "https://github.com/arceos-hypervisor/axvm.git", branch = "inject_interrupt" }
 axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", branch = "inject_interrupt" }
