@@ -1,12 +1,18 @@
+use std::os::arceos;
+
 mod config;
 mod images;
 mod vcpus;
 mod vm_list;
 
-use std::os::arceos::api::task::{self, AxWaitQueueHandle};
-
+use aarch64_cpu::registers::{
+    CNTFRQ_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0, CNTPCT_EL0, CNTV_CTL_EL0, CNTV_TVAL_EL0,
+};
+use arceos::modules::axhal;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
+use std::os::arceos::api::task::{self, AxWaitQueueHandle};
+use tock_registers::interfaces::{Readable, Writeable};
 
 use crate::hal::{AxVCpuHalImpl, AxVMHalImpl};
 

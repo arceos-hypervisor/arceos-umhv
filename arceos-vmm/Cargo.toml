@@ -7,6 +7,8 @@ authors = ["Keyang Hu <keyang.hu@qq.com>"]
 
 [features]
 fs = ["axstd/fs"]
+irq = []
+hv = []
 
 [dependencies]
 log = "=0.4.21"
@@ -29,6 +31,7 @@ axstd = { workspace = true, features = [
 axvm = { workspace = true }
 axvcpu = { workspace = true }
 axaddrspace = { workspace = true }
+axdevice = { workspace = true }
 
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
 crate_interface = "0.1"
@@ -37,6 +40,8 @@ memory_addr = "0.3"
 page_table_entry = { version = "0.5", features = ["arm-el2"] }
 page_table_multiarch = "0.5"
 percpu = { version = "0.1.4", features = ["arm-el2"] }
+aarch64-cpu = "9.4"
+tock-registers = "0.8"
 
 [build-dependencies]
 toml = { git = "https://github.com/arceos-hypervisor/toml.git", branch = "no_std" }

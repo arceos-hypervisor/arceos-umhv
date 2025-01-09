@@ -13,7 +13,7 @@ family = "aarch64-qemu-virt"        # str
 # Base address of the whole physical memory.
 phys-memory-base = 0x4000_0000      # uint
 # Size of the whole physical memory. (128M)
-phys-memory-size = 0x800_0000       # uint
+phys-memory-size = 0x2_0000_0000       # uint
 # Base physical address of the kernel image.
 kernel-base-paddr = 0x4008_0000     # uint
 # Base virtual address of the kernel image.
@@ -96,6 +96,8 @@ uart-irq = 1                    # uint
 gicc-paddr = 0x0801_0000        # uint
 # GIC Distributor base address
 gicd-paddr = 0x0800_0000        # uint
+gicv-paddr = 0x0804_0000
+gich-paddr = 0x0803_0000
 
 # PSCI
 psci-method = "smc"             # str

@@ -1,3 +1,5 @@
+use std::os::arceos;
+
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
@@ -8,11 +10,11 @@ use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
 use axvcpu::{AxVCpuExitReason, VCpuState};
 
-use api::sys::ax_terminate;
-use api::task::AxCpuMask;
-
 use crate::task::TaskExt;
 use crate::vmm::{VCpuRef, VMRef};
+use api::sys::ax_terminate;
+use api::task::AxCpuMask;
+use arceos::modules::axhal;
 
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
@@ -258,7 +260,11 @@ fn vcpu_run() {
                     );
                 }
                 AxVCpuExitReason::ExternalInterrupt { vector } => {
-                    debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                    // debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                    if vector == 26 {
+                        axhal::irq::handler_irq(vector as usize);
+                    }
+                    // debug!("000VM[{}] run VCpu[{}] irq handled", vm_id, vcpu_id);
                 }
                 AxVCpuExitReason::Halt => {
                     debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
