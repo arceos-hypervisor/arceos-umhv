@@ -7,6 +7,8 @@ use axaddrspace::{HostPhysAddr, HostVirtAddr};
 use axvcpu::AxVCpuHal;
 use axvm::{AxVMHal, AxVMPerCpu};
 
+use crate::vmm;
+
 /// Implementation for `AxVMHal` trait.
 pub struct AxVMHalImpl;
 
@@ -86,6 +88,7 @@ pub(crate) fn enable_virtualization() {
             percpu
                 .hardware_enable()
                 .expect("Failed to enable virtualization");
+            vmm::init_timer_percpu();
 
             info!("Hardware virtualization support enabled on core {}", cpu_id);
 

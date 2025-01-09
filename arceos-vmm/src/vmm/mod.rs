@@ -10,6 +10,7 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 
 use crate::hal::{AxVCpuHalImpl, AxVMHalImpl};
+pub use timer::init_percpu as init_timer_percpu;
 
 pub type VM = axvm::AxVM<AxVMHalImpl, AxVCpuHalImpl>;
 pub type VMRef = axvm::AxVMRef<AxVMHalImpl, AxVCpuHalImpl>;
@@ -23,9 +24,6 @@ static RUNNING_VM_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub fn init() {
     // Initialize guest VM according to config file.
     config::init_guest_vms();
-
-    // Initialize timer list
-    timer::init();
 
     // Setup vcpus, spawn axtask for primary VCpu.
     info!("Setting up vcpus...");
