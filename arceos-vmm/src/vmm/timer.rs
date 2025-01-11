@@ -1,7 +1,7 @@
 extern crate alloc;
 
-use std::os::arceos::modules::axhal;
 use std::os::arceos::modules::axconfig;
+use std::os::arceos::modules::axhal;
 
 use alloc::boxed::Box;
 use kspin::SpinNoIrq;
