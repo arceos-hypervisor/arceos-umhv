@@ -104,6 +104,8 @@ pub(crate) fn enable_virtualization() {
                 "Initialize CPU affinity failed!"
             );
 
+            vmm::init_timer_percpu();
+
             let percpu = unsafe { AXVM_PER_CPU.current_ref_mut_raw() };
             percpu
                 .init(this_cpu_id())
@@ -111,7 +113,6 @@ pub(crate) fn enable_virtualization() {
             percpu
                 .hardware_enable()
                 .expect("Failed to enable virtualization");
-            vmm::init_timer_percpu();
 
             info!("Hardware virtualization support enabled on core {}", cpu_id);
 

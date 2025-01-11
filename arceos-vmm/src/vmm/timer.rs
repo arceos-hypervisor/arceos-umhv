@@ -1,15 +1,14 @@
 extern crate alloc;
 
 use std::os::arceos::modules::axhal;
+use std::os::arceos::modules::axconfig;
 
 use alloc::boxed::Box;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
-const TICKS_PER_SEC: u64 = 100;
-const NANOS_PER_SEC: u64 = 1_000_000_000;
-const PERIODIC_INTERVAL_NANOS: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
+const PERIODIC_INTERVAL_NANOS: u64 = axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
 
 pub struct VmmTimerEvent {
     timer_callback: Box<dyn FnOnce(TimeValue) + Send + 'static>,
