@@ -30,13 +30,7 @@ fn main() {
 }
 
 fn timer_init() {
-    axhal::irq::set_enable(26, true);
-    axhal::arch::enable_irqs();
     axdevice::timer::init();
-    axhal::irq::register_handler(26, || {
-        axdevice::timer::scheduler_next_event();
-        axdevice::timer::check_events();
-    });
 
     debug!("VMM init done");
 }

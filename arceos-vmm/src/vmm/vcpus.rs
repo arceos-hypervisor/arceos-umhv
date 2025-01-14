@@ -262,6 +262,8 @@ fn vcpu_run() {
                 AxVCpuExitReason::ExternalInterrupt { vector } => {
                     // debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
                     if vector == 26 {
+                        // axdevice::timer::scheduler_next_event();
+                        axdevice::timer::check_events();
                         axhal::irq::handler_irq(vector as usize);
                     }
                     // debug!("000VM[{}] run VCpu[{}] irq handled", vm_id, vcpu_id);
