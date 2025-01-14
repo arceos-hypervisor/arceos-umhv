@@ -116,7 +116,6 @@ dependencies = [
  "axvm",
  "bitflags 2.6.0",
  "crate_interface",
- "fdt",
  "kspin",
  "lazyinit",
  "log",
