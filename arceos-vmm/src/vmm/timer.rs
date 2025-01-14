@@ -77,9 +77,9 @@ pub fn cancel_timer(token: usize) {
 
 /// Check and process any pending timer events
 pub fn check_events() {
+    let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
     loop {
         let now = axhal::time::wall_time();
-        let timer_list = unsafe { TIMER_LIST.current_ref_mut_raw() };
         let event = timer_list.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
             trace!("pick one {:#?} to handler!!!", _deadline);
