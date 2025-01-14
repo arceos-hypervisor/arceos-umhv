@@ -14,7 +14,7 @@ static TOKEN: AtomicUsize = AtomicUsize::new(0);
 const PERIODIC_INTERVAL_NANOS: u64 = axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
 
 /// Represents a timer event in the virtual machine monitor (VMM).
-/// 
+///
 /// This struct holds a unique token for the timer and a callback function
 /// that will be executed when the timer expires.
 pub struct VmmTimerEvent {
