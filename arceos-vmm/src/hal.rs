@@ -137,6 +137,8 @@ pub(crate) fn enable_virtualization() {
                 "Initialize CPU affinity failed!"
             );
 
+            vmm::init_timer_percpu();
+
             let percpu = unsafe { AXVM_PER_CPU.current_ref_mut_raw() };
             percpu
                 .init(this_cpu_id())

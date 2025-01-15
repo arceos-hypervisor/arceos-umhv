@@ -118,6 +118,7 @@ dependencies = [
  "cpumask",
  "crate_interface",
  "kernel_guard",
+ "kspin",
  "lazyinit",
  "log",
  "memory_addr",
@@ -125,6 +126,7 @@ dependencies = [
  "page_table_multiarch",
  "percpu",
  "spin",
+ "timer_list",
  "toml",
 ]
 

@@ -1,5 +1,6 @@
 mod config;
 mod images;
+mod timer;
 mod vcpus;
 mod vm_list;
 
@@ -13,6 +14,7 @@ use std::os::arceos::modules::axtask::TaskExtRef;
 use axerrno::{AxResult, ax_err_type};
 
 use crate::hal::{AxVCpuHalImpl, AxVMHalImpl};
+pub use timer::init_percpu as init_timer_percpu;
 
 pub type VM = axvm::AxVM<AxVMHalImpl, AxVCpuHalImpl>;
 pub type VMRef = axvm::AxVMRef<AxVMHalImpl, AxVCpuHalImpl>;
