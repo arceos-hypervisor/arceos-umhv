@@ -1,6 +1,5 @@
 mod config;
 mod images;
-mod timer;
 mod vcpus;
 mod vm_list;
 
@@ -10,7 +9,6 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 
 use crate::hal::{AxVCpuHalImpl, AxVMHalImpl};
-pub use timer::init_percpu as init_timer_percpu;
 
 pub type VM = axvm::AxVM<AxVMHalImpl, AxVCpuHalImpl>;
 pub type VMRef = axvm::AxVMRef<AxVMHalImpl, AxVCpuHalImpl>;
