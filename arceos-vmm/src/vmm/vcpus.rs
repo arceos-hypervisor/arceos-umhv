@@ -193,7 +193,11 @@ pub fn find_vcpu_task(vm_id: usize, vcpu_id: usize) -> Option<AxTaskRef> {
 }
 
 /// Executes the provided closure with the [`AxTaskRef`] associated with the specified vCPU of the specified VM.
-pub fn with_vcpu_task<T, F: FnOnce(&AxTaskRef) -> T>(vm_id: usize, vcpu_id: usize, f: F) -> Option<T> {
+pub fn with_vcpu_task<T, F: FnOnce(&AxTaskRef) -> T>(
+    vm_id: usize,
+    vcpu_id: usize,
+    f: F,
+) -> Option<T> {
     unsafe { VM_VCPU_TASK_WAIT_QUEUE.get(&vm_id) }
         .unwrap()
         .vcpu_task_list
@@ -262,6 +266,18 @@ fn vcpu_run() {
             Ok(exit_reason) => match exit_reason {
                 AxVCpuExitReason::Hypercall { nr, args } => {
                     debug!("Hypercall [{}] args {:x?}", nr, args);
+
+                    if nr == 0xf785 && args[0] == 0xdead_beaf_1234_5678 {
+                        debug!(
+                            "VM[{}] Vcpu[{}] send mock interrupt injection vmcall",
+                            vm_id, vcpu_id
+                        );
+
+                        vm.inject_interrupt_to_vcpu(cpumask::CpuMask::one_shot(vcpu_id), 0x66)
+                            .unwrap();
+                    }
+
+                    vcpu.set_gpr(0, !args[1] as _);
                 }
                 AxVCpuExitReason::FailEntry {
                     hardware_entry_failure_reason,

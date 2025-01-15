@@ -1,10 +1,14 @@
-use std::{boxed::Box, os::arceos::{self, modules::{axhal::cpu::current_task_ptr, axipi::{self, IPIEventFn}, axtask::{self, TaskExtRef}}}};
+use std::os::arceos::{
+    self,
+    modules::axtask::{self, TaskExtRef},
+};
 
+use axerrno::{AxResult, ax_err_type};
 use memory_addr::{PAGE_SIZE_4K, align_up_4k};
 use page_table_multiarch::PagingHandler;
 
 use arceos::modules::{axalloc, axhal};
-use axaddrspace::{HostPhysAddr, HostVirtAddr};
+use axaddrspace::{AxMmHal, HostPhysAddr, HostVirtAddr};
 use axvcpu::AxVCpuHal;
 use axvm::{AxVMHal, AxVMPerCpu};
 
@@ -45,38 +49,34 @@ impl AxVMHal for AxVMHalImpl {
     fn current_time_nanos() -> u64 {
         axhal::time::monotonic_time_nanos()
     }
-    
+
     fn current_vm_id() -> usize {
         axtask::current().task_ext().vm.id()
     }
-    
+
     fn current_vcpu_id() -> usize {
         axtask::current().task_ext().vcpu.id()
     }
-    
+
     fn current_pcpu_id() -> usize {
         axhal::cpu::this_cpu_id()
     }
+
+    fn vcpu_resides_on(vm_id: usize, vcpu_id: usize) -> AxResult<usize> {
+        vmm::with_vcpu_task(vm_id, vcpu_id, |task| task.cpu_id() as usize)
+            .ok_or_else(|| ax_err_type!(NotFound))
+    }
+
+    fn inject_irq_to_vcpu(vm_id: usize, vcpu_id: usize, irq: usize) -> axerrno::AxResult {
+        vmm::with_vm_and_vcpu_on_pcpu(vm_id, vcpu_id, move |_, vcpu| {
+            vcpu.inject_interrupt(irq).unwrap();
+        })
+    }
 }
 
-pub fn vcpu_resides_on(vm_id: usize, vcpu_id: usize) -> usize {
-    todo!()
-}
+pub struct AxMmHalImpl;
 
-pub fn inject_irq_to_vcpu_remotely(
-    vm_id: usize,
-    vcpu_id: usize,
-    irq: usize,
-    pcpu_id: usize
-) {
-    vmm::with_vm_and_vcpu_on_pcpu(vm_id, vcpu_id, move |_, vcpu| {
-        vcpu.inject_interrupt(irq);
-    });
-}
-
-pub struct AxVCpuHalImpl;
-
-impl AxVCpuHal for AxVCpuHalImpl {
+impl AxMmHal for AxMmHalImpl {
     fn alloc_frame() -> Option<HostPhysAddr> {
         <AxVMHalImpl as AxVMHal>::PagingHandler::alloc_frame()
     }
@@ -93,6 +93,12 @@ impl AxVCpuHal for AxVCpuHalImpl {
     fn virt_to_phys(vaddr: axaddrspace::HostVirtAddr) -> axaddrspace::HostPhysAddr {
         std::os::arceos::modules::axhal::mem::virt_to_phys(vaddr)
     }
+}
+
+pub struct AxVCpuHalImpl;
+
+impl AxVCpuHal for AxVCpuHalImpl {
+    type MmHal = AxMmHalImpl;
 
     #[cfg(target_arch = "aarch64")]
     fn irq_fetch() -> usize {

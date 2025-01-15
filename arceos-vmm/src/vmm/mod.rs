@@ -10,8 +10,7 @@ use core::sync::atomic::Ordering;
 use std::os::arceos::modules::axtask;
 use std::os::arceos::modules::axtask::TaskExtRef;
 
-use axerrno::ax_err_type;
-use axerrno::{AxResult, ax_err};
+use axerrno::{AxResult, ax_err_type};
 
 use crate::hal::{AxVCpuHalImpl, AxVMHalImpl};
 
@@ -52,8 +51,15 @@ pub fn start() {
     task::ax_wait_queue_wait_until(&VMM, || RUNNING_VM_COUNT.load(Ordering::Acquire) == 0, None);
 }
 
+#[allow(unused_imports)]
+pub use vcpus::{find_vcpu_task, with_vcpu_task};
+
 /// Run a closure with the specified VM and vCPU.
-pub fn with_vm_and_vcpu<T>(vm_id: usize, vcpu_id: usize, f: impl FnOnce(VMRef, VCpuRef) -> T) -> Option<T> {
+pub fn with_vm_and_vcpu<T>(
+    vm_id: usize,
+    vcpu_id: usize,
+    f: impl FnOnce(VMRef, VCpuRef) -> T,
+) -> Option<T> {
     let vm = vm_list::get_vm_by_id(vm_id)?;
     let vcpu = vm.vcpu(vcpu_id)?;
 
@@ -62,21 +68,33 @@ pub fn with_vm_and_vcpu<T>(vm_id: usize, vcpu_id: usize, f: impl FnOnce(VMRef, V
 
 /// Run a closure with the specified VM and vCPU, with the guarantee that the closure will be
 /// executed on the physical CPU where the vCPU is running, waiting, or queueing.
-/// 
+///
 /// It seems necessary to disable scheduling when running the closure.
-pub fn with_vm_and_vcpu_on_pcpu(vm_id: usize, vcpu_id: usize, f: impl FnOnce(VMRef, VCpuRef) + 'static) -> AxResult {
+pub fn with_vm_and_vcpu_on_pcpu(
+    vm_id: usize,
+    vcpu_id: usize,
+    f: impl FnOnce(VMRef, VCpuRef) + 'static,
+) -> AxResult {
+    // Disables preemption and IRQs to prevent the current task from being preempted or re-scheduled.
+    let guard = kernel_guard::NoPreemptIrqSave::new();
+
     let current_vm = axtask::current().task_ext().vm.id();
     let current_vcpu = axtask::current().task_ext().vcpu.id();
 
+    // The target vCPU is the current task, execute the closure directly.
     if current_vm == vm_id && current_vcpu == vcpu_id {
-        return with_vm_and_vcpu(vm_id, vcpu_id, f).ok_or_else(|| ax_err_type!(NotFound))
-    } else {
-        use std::os::arceos::modules::axipi;
-
-        let pcpu_id = vcpus::with_vcpu_task(vm_id, vcpu_id, |task| task.cpu_id()).ok_or_else(|| ax_err_type!(NotFound))?;
-
-        Ok(axipi::send_ipi_event_to_one(pcpu_id as usize, move || {
-            with_vm_and_vcpu_on_pcpu(vm_id, vcpu_id, f);
-        }))
+        with_vm_and_vcpu(vm_id, vcpu_id, f).unwrap(); // unwrap is safe here
+        return Ok(());
     }
+
+    // The target vCPU is not the current task, send an IPI to the target physical CPU.
+    drop(guard);
+
+    let pcpu_id = vcpus::with_vcpu_task(vm_id, vcpu_id, |task| task.cpu_id())
+        .ok_or_else(|| ax_err_type!(NotFound))?;
+
+    use std::os::arceos::modules::axipi;
+    Ok(axipi::send_ipi_event_to_one(pcpu_id as usize, move || {
+        with_vm_and_vcpu_on_pcpu(vm_id, vcpu_id, f);
+    }))
 }
