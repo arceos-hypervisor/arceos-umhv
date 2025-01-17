@@ -75,7 +75,7 @@ impl AxVCpuHal for AxVCpuHalImpl {
     #[cfg(target_arch = "aarch64")]
     fn irq_hanlder() {
         let irq_num = axhal::irq::fetch_irq();
-        debug!("IRQ handler {irq_num}");
+        trace!("IRQ handler {irq_num}");
         axhal::irq::handler_irq(irq_num);
     }
 }

@@ -6,13 +6,16 @@ use std::os::arceos::modules::axtask;
 
 use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
-use axvcpu::{AxVCpuExitReason, VCpuState};
+use axvcpu::{AxVCpuExitReason, AxVcpuFunction, VCpuState};
 
 use api::sys::ax_terminate;
 use api::task::AxCpuMask;
 
 use crate::task::TaskExt;
 use crate::vmm::{VCpuRef, VMRef};
+
+use crate::vmm::timer::{check_events, register_timer};
+use std::os::arceos::modules::axhal;
 
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
@@ -258,12 +261,40 @@ fn vcpu_run() {
                     );
                 }
                 AxVCpuExitReason::ExternalInterrupt { vector } => {
-                    debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                    trace!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+                    check_events();
+                    axhal::irq::handler_irq(vector as usize);
                 }
                 AxVCpuExitReason::Halt => {
                     debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
                     wait(vm_id)
                 }
+                AxVCpuExitReason::VcpuFuncCall(func) => match func {
+                    AxVcpuFunction::SetTimer { deadline } => {
+                        let now = axhal::time::monotonic_time_nanos();
+                        trace!(
+                            "VM[{}] run VCpu[{}] SetTimer deadline={}",
+                            vm_id,
+                            vcpu_id,
+                            deadline + now
+                        );
+                        register_timer(deadline + now, |_| {
+                            trace!("Timer expired: {}", axhal::time::monotonic_time_nanos());
+                            let gich = axhal::irq::MyVgic::get_gich();
+                            let hcr = gich.get_hcr();
+                            gich.set_hcr(hcr | 1 << 0);
+                            let mut lr = 0;
+                            lr |= 30 << 0;
+                            lr |= 1 << 19;
+                            lr |= 1 << 28;
+                            gich.set_lr(0, lr);
+                        });
+                    }
+                    AxVcpuFunction::None => {}
+                    _ => {
+                        warn!("Unhandled AxVcpuFunction");
+                    }
+                },
                 AxVCpuExitReason::Nothing => {}
                 AxVCpuExitReason::CpuDown { _state } => {
                     warn!(

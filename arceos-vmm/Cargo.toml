@@ -7,6 +7,8 @@ authors = ["Keyang Hu <keyang.hu@qq.com>"]
 
 [features]
 fs = ["axstd/fs"]
+irq = []
+hv = []
 
 [dependencies]
 log = "=0.4.21"

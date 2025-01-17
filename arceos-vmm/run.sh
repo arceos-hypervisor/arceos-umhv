@@ -1,0 +1,2 @@
+make A=$(pwd) LOG=debug ARCH=aarch64 BLK=y VM_CONFIGS=configs/vms/nimbos-aarch64_0.toml:configs/vms/nimbos-aarch64_1.toml FEATURES=page-alloc-64g,hv,irq MEM=8g  APP_FEATURES=fs SMP=2 SECOND_SERIAL=y run
+# make A=$(pwd) LOG=debug ARCH=aarch64 BLK=y VM_CONFIGS=configs/vms/nimbos-aarch64_1.toml FEATURES=page-alloc-64g,hv,irq MEM=8g  APP_FEATURES=fs SMP=2 SECOND_SERIAL=n run
