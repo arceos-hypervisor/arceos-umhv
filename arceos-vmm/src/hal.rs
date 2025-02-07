@@ -72,6 +72,10 @@ impl AxVMHal for AxVMHalImpl {
             vcpu.inject_interrupt(irq).unwrap();
         })
     }
+
+    fn dododo(s: &'static str) {
+        // info!("{}: -- irq enabled: {:?}", s, axhal::arch::irqs_enabled());
+    }
 }
 
 pub struct AxMmHalImpl;

@@ -1,5 +1,6 @@
 mod config;
 mod images;
+mod mock;
 mod timer;
 mod vcpus;
 mod vm_list;
@@ -8,6 +9,7 @@ use std::os::arceos::api::task::{self, AxWaitQueueHandle};
 
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
+use std::os::arceos::modules::axhal;
 use std::os::arceos::modules::axtask;
 use std::os::arceos::modules::axtask::TaskExtRef;
 

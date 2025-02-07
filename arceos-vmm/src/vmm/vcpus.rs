@@ -2,7 +2,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
 use std::os::arceos::api;
-use std::os::arceos::modules::axtask;
+use std::os::arceos::modules::{axhal, axtask};
 
 use axaddrspace::GuestPhysAddr;
 use axtask::{AxTaskRef, TaskExtRef, TaskInner, WaitQueue};
@@ -260,6 +260,10 @@ fn vcpu_run() {
 
     info!("VM[{}] Vcpu[{}] running...", vm.id(), vcpu.id());
 
+    warn!("vcpu_run: temp action! scheduler_next_event");
+    // %%% temp action!
+    super::timer::scheduler_next_event();
+
     loop {
         match vm.run_vcpu(vcpu_id) {
             // match vcpu.run() {
@@ -273,8 +277,8 @@ fn vcpu_run() {
                             vm_id, vcpu_id
                         );
 
-                        vm.inject_interrupt_to_vcpu(cpumask::CpuMask::one_shot(vcpu_id), 0x66)
-                            .unwrap();
+                        // vm.inject_interrupt_to_vcpu(cpumask::CpuMask::one_shot(vcpu_id), 0x66)
+                        //     .unwrap();
                     }
 
                     vcpu.set_gpr(0, !args[1] as _);
@@ -289,6 +293,9 @@ fn vcpu_run() {
                 }
                 AxVCpuExitReason::ExternalInterrupt { vector } => {
                     debug!("VM[{}] run VCpu[{}] get irq {}", vm_id, vcpu_id, vector);
+
+                    // %%% temp action!
+                    super::timer::scheduler_next_event();
                 }
                 AxVCpuExitReason::Halt => {
                     debug!("VM[{}] run VCpu[{}] Halt", vm_id, vcpu_id);
@@ -327,5 +334,8 @@ fn vcpu_run() {
                 wait(vm_id)
             }
         }
+
+        // %%% temp action!
+        super::timer::check_events();
     }
 }

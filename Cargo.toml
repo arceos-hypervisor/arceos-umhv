@@ -13,3 +13,16 @@ axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "
 axvm = { git = "https://github.com/arceos-hypervisor/axvm.git", branch = "inject_interrupt" }
 axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", branch = "inject_interrupt" }
 axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git", branch = "inject_interrupt" }
+
+[patch."https://github.com/arceos-hypervisor/axvm.git"]
+axvm = { path = "../axvm" }
+
+[patch."https://github.com/arceos-hypervisor/axdevice.git"]
+axdevice = { path = "../axdevice" }
+
+[patch."https://github.com/arceos-hypervisor/axdevice_crates.git"]
+axdevice_base = { path = "../axdevice_crates/axdevice_base" }
+
+[patch."https://github.com/arceos-hypervisor/arceos.git"]
+axstd = { path = "../arceos-new/ulib/axstd", features = ["ipi", "smp"] }
+axconfig = { path = "../arceos-new/modules/axconfig" }
