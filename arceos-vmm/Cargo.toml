@@ -1,52 +1,45 @@
 [package]
 name = "arceos-vmm"
 version = "0.1.0"
-edition = "2021"
-authors = ["Keyang Hu <976929993@qq.com>"]
+edition = "2024"
+authors = ["Keyang Hu <keyang.hu@qq.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+fs = ["axstd/fs"]
+
 [dependencies]
-log = "=0.4.19"
+log = "=0.4.21"
 bitflags = "2.2"
 spin = "0.9"
+kspin = "0.1"
+lazyinit = "0.2"
+timer_list = "0.1.0"
 
 # System dependent modules provided by ArceOS.
-axhal = { workspace = true, features = ["paging"] }
-axtask = { workspace = true, features = ["multitask"] }
 axstd = { workspace = true, features = [
     "alloc",
     "paging",
-    "fs",
-    # "irq",
+    # "fs",
+    "irq",
     "hv",
     "multitask",
+    # "sched_rr"
 ] }
 
 # System dependent modules provided by ArceOS-Hypervisor.
 axvm = { workspace = true }
 axvcpu = { workspace = true }
+axaddrspace = { workspace = true }
 
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
+crate_interface = "0.1"
 axerrno = "0.1.0"
-memory_addr = "0.2.0"
-page_table_entry = { version = "0.3.3", features = ["arm-el2"] }
-page_table_multiarch = "0.3.3"
+memory_addr = "0.3"
+page_table_entry = { version = "0.5", features = ["arm-el2"] }
+page_table_multiarch = "0.5"
 percpu = { version = "0.1.4", features = ["arm-el2"] }
 
-[target.'cfg(target_arch = "x86_64")'.dependencies]
-x86 = "0.52"
-x86_64 = "0.14"
-raw-cpuid = "11.0"
-crate_interface = "0.1"
-# According to the requirements of x86_vcpu, 
-# we need to implement PhysFrameIf for it, so we directly import `x86_vcpu` as a dependency in the app.
-# Ref: [x86_vcpu](https://github.com/arceos-hypervisor/x86_vcpu/)
-x86_vcpu = { workspace = true }
-
-[target.'cfg(target_arch = "riscv64")'.dependencies]
-fdt = { version = "0.1.5" }
-arrayvec = { version = "0.7.2", default-features = false }
-
-[target.'cfg(target_arch = "aarch64")'.dependencies]
-fdt = { version = "0.1.5" }
-arrayvec = { version = "0.7.2", default-features = false }
+[build-dependencies]
+toml = { git = "https://github.com/arceos-hypervisor/toml.git", branch = "no_std" }
+axconfig = { workspace = true }

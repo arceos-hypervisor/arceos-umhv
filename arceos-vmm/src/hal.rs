@@ -1,6 +1,14 @@
-use axvm::AxVMHal;
-// Todo: should we know about HostPhysAddr and HostVirtAddr here???
-use memory_addr::{PhysAddr, VirtAddr};
+use std::os::arceos;
+
+use memory_addr::{PAGE_SIZE_4K, align_up_4k};
+use page_table_multiarch::PagingHandler;
+
+use arceos::modules::{axalloc, axhal};
+use axaddrspace::{HostPhysAddr, HostVirtAddr};
+use axvcpu::AxVCpuHal;
+use axvm::{AxVMHal, AxVMPerCpu};
+
+use crate::vmm;
 
 /// Implementation for `AxVMHal` trait.
 pub struct AxVMHalImpl;
@@ -8,7 +16,29 @@ pub struct AxVMHalImpl;
 impl AxVMHal for AxVMHalImpl {
     type PagingHandler = axhal::paging::PagingHandlerImpl;
 
-    fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
+    fn alloc_memory_region_at(base: HostPhysAddr, size: usize) -> bool {
+        axalloc::global_allocator()
+            .alloc_pages_at(
+                base.as_usize(),
+                align_up_4k(size) / PAGE_SIZE_4K,
+                PAGE_SIZE_4K,
+            )
+            .map_err(|err| {
+                error!(
+                    "Failed to allocate memory region [{:?}~{:?}]: {:?}",
+                    base,
+                    base + size,
+                    err
+                );
+            })
+            .is_ok()
+    }
+
+    fn dealloc_memory_region_at(base: HostPhysAddr, size: usize) {
+        axalloc::global_allocator().dealloc_pages(base.as_usize(), size / PAGE_SIZE_4K)
+    }
+
+    fn virt_to_phys(vaddr: HostVirtAddr) -> HostPhysAddr {
         axhal::mem::virt_to_phys(vaddr)
     }
 
@@ -17,38 +47,82 @@ impl AxVMHal for AxVMHalImpl {
     }
 }
 
-/// This design might seem strange,
-/// but the underlying reason is that the vCPU implementations for ARM and RISC-V architectures
-/// **DO NOT** require dependency on OS-related resource management interfaces.
-///
-/// However, the vCPU implementation for the x86_64 architecture relies on OS-provided physical memory management interfaces to allocate memory for VMX-related control regions.
-/// To avoid unnecessary Rust generic type applications, we decided to introduce `crate_interface` in the [`x86_vcpu`](https://github.com/arceos-hypervisor/x86_vcpu) crate
-/// and use it to call OS-related resource allocation interfaces to implement `PhysFrameIf`.
-#[cfg(target_arch = "x86_64")]
-mod frame_x86 {
-    use memory_addr::{PhysAddr, VirtAddr};
-    use page_table_multiarch::PagingHandler;
+pub struct AxVCpuHalImpl;
 
-    use axvm::AxVMHal;
+impl AxVCpuHal for AxVCpuHalImpl {
+    fn alloc_frame() -> Option<HostPhysAddr> {
+        <AxVMHalImpl as AxVMHal>::PagingHandler::alloc_frame()
+    }
 
-    use crate::hal::AxVMHalImpl;
+    fn dealloc_frame(paddr: HostPhysAddr) {
+        <AxVMHalImpl as AxVMHal>::PagingHandler::dealloc_frame(paddr)
+    }
 
-    /// Implementation for `PhysFrameIf` trait provided by [x86_vcpu](https://github.com/arceos-hypervisor/x86_vcpu) crate.
-    struct PhysFrameIfImpl;
+    #[inline]
+    fn phys_to_virt(paddr: HostPhysAddr) -> HostVirtAddr {
+        <AxVMHalImpl as AxVMHal>::PagingHandler::phys_to_virt(paddr)
+    }
 
-    #[crate_interface::impl_interface]
-    impl x86_vcpu::PhysFrameIf for PhysFrameIfImpl {
-        fn alloc_frame() -> Option<PhysAddr> {
-            <AxVMHalImpl as AxVMHal>::PagingHandler::alloc_frame()
-        }
+    fn virt_to_phys(vaddr: axaddrspace::HostVirtAddr) -> axaddrspace::HostPhysAddr {
+        std::os::arceos::modules::axhal::mem::virt_to_phys(vaddr)
+    }
 
-        fn dealloc_frame(paddr: PhysAddr) {
-            <AxVMHalImpl as AxVMHal>::PagingHandler::dealloc_frame(paddr)
-        }
+    #[cfg(target_arch = "aarch64")]
+    fn irq_fetch() -> usize {
+        axhal::irq::fetch_irq()
+    }
 
-        #[inline]
-        fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
-            <AxVMHalImpl as AxVMHal>::PagingHandler::phys_to_virt(paddr)
-        }
+    #[cfg(target_arch = "aarch64")]
+    fn irq_hanlder() {
+        let irq_num = axhal::irq::fetch_irq();
+        debug!("IRQ handler {irq_num}");
+        axhal::irq::handler_irq(irq_num);
+    }
+}
+
+#[percpu::def_percpu]
+static mut AXVM_PER_CPU: AxVMPerCpu<AxVCpuHalImpl> = AxVMPerCpu::<AxVCpuHalImpl>::new_uninit();
+
+/// Init hardware virtualization support in each core.
+pub(crate) fn enable_virtualization() {
+    use core::sync::atomic::AtomicUsize;
+    use core::sync::atomic::Ordering;
+
+    use std::thread;
+
+    use arceos::api::config;
+    use arceos::api::task::{AxCpuMask, ax_set_current_affinity};
+    use arceos::modules::axhal::cpu::this_cpu_id;
+
+    static CORES: AtomicUsize = AtomicUsize::new(0);
+
+    for cpu_id in 0..config::SMP {
+        thread::spawn(move || {
+            // Initialize cpu affinity here.
+            assert!(
+                ax_set_current_affinity(AxCpuMask::one_shot(cpu_id)).is_ok(),
+                "Initialize CPU affinity failed!"
+            );
+
+            vmm::init_timer_percpu();
+
+            let percpu = unsafe { AXVM_PER_CPU.current_ref_mut_raw() };
+            percpu
+                .init(this_cpu_id())
+                .expect("Failed to initialize percpu state");
+            percpu
+                .hardware_enable()
+                .expect("Failed to enable virtualization");
+
+            info!("Hardware virtualization support enabled on core {}", cpu_id);
+
+            let _ = CORES.fetch_add(1, Ordering::Release);
+        });
+    }
+
+    // Wait for all cores to enable virtualization.
+    while CORES.load(Ordering::Acquire) != config::SMP {
+        // Use `yield_now` instead of `core::hint::spin_loop` to avoid deadlock.
+        thread::yield_now();
     }
 }
