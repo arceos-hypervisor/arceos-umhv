@@ -4,7 +4,7 @@ Let's build a VMM (Virtual Machine Minotor or hypervisor) upon [ArceOS](https://
 
 Overall architecture overview can be found [here](doc/README.md).
 
-Refer to these [discussions](https://github.com/arceos-hypervisor/arceos-umhv/discussions) to gain insights into the thoughts and future development directions of this project.
+Refer to these [discussions](https://github.com/arceos-hypervisor/axvisor/discussions) to gain insights into the thoughts and future development directions of this project.
 
 ## Preparation
 
@@ -48,7 +48,7 @@ Currently, arceos-hypervisor supports loading guest VM images from arceos' fat f
 * load from file system
   * specify `image_location="fs"` in the `config.toml` file.
   * `kernel_path` in `config.toml` refers to the location of the kernel image in the arceos rootfs (e.g. `disk.img`).
-  * Note: `"fs"` feature is required for arceos-umhv, this can be configured via environment variables `APP_FEATURES=fs`.
+  * Note: `"fs"` feature is required for axvisor, this can be configured via environment variables `APP_FEATURES=fs`.
 * load from memory
   * specify `image_location="memory"` in the `config.toml` file.
   * `kernel_path` in `config.toml` refers to the relative/absolute path of the kernel image in your workspace when compiling arceos-vmm.
@@ -57,7 +57,6 @@ Currently, arceos-hypervisor supports loading guest VM images from arceos' fat f
 ### Build File System image
 
 ```console
-$ cd arceos-vmm
 $ make disk_img
 $
 $ # Copy guest VM binary image files.
@@ -82,7 +81,6 @@ make ubuntu_img ARCH=aarch64
 ### Example build commands
 
 ```console
-$ cd arceos-vmm
 # x86_64 for nimbos
 # [LOG=warn|info|debug|trace]
 $ make ARCH=x86_64 defconfig
@@ -102,7 +100,6 @@ $ make ARCH=aarch64 VM_CONFIGS=configs/vms/linux-qemu-aarch64-smp2.toml LOG=debu
 ### Demo Output
 
 ```console
-$ cd arceos-vmm
 $ make ACCEL=y ARCH=x86_64 LOG=warn VM_CONFIGS=configs/nimbos-x86_64.toml APP_FEATURES=fs run
 ......
 Booting from ROM..

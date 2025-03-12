@@ -1,6 +1,6 @@
-# About CI-testing of `ArceOS-UMHV`
+# About CI-testing of `axvisor`
 
-The CI-testing of `ArceOS-UMHV` is done using GitHub Actions. The CI configuration file is located at `.github/workflows/test.yml`. The workflow first installs the necessary dependencies, then builds the project, and finally runs the tests.
+The CI-testing of `axvisor` is done using GitHub Actions. The CI configuration file is located at `.github/workflows/test.yml`. The workflow first installs the necessary dependencies, then builds the project, and finally runs the tests.
 
 To run a guest OS in the CI environment:
 

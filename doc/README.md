@@ -21,7 +21,7 @@ Arceos-Hypervisor runs as an ArceOS app, mainly composed of the following indepe
 
 ### APP
 
-* [vmm-app](https://github.com/arceos-hypervisor/arceos-umhv/tree/master/arceos-vmm): a user app of ArceOS, acts like a VMM
+* [vmm-app](https://github.com/arceos-hypervisor/axvisor/tree/master/arceos-vmm): a user app of ArceOS, acts like a VMM
     * completely architecture-independent
 	* main entry point of ArceOS-Hypervisor
     * responsible for VM management (configuration & runtime)

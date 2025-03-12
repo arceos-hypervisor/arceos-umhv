@@ -4,13 +4,13 @@
 
 * Simple real time guest VM that can only be used for **single-core** testing
 * It supports the x86_64, aarch64, and riscv64 architectures
-* Configuration file templates at [nimbos-aarch64.toml](../arceos-vmm/configs/nimbos-aarch64.toml), [nimbos-x86_64.toml](../arceos-vmm/configs/nimbos-x86_64.toml), and [nimbos-riscv64.toml](../arceos-vmm/configs/nimbos-riscv64.toml)
+* Configuration file templates at [nimbos-aarch64.toml](../configs/nimbos-aarch64.toml), [nimbos-x86_64.toml](../configs/nimbos-x86_64.toml), and [nimbos-riscv64.toml](../configs/nimbos-riscv64.toml)
 * Kernel binary images availble at [nimbos/releases](https://github.com/arceos-hypervisor/nimbos/releases/tag/v0.6)
 
 ## [ArceOS](https://github.com/arceos-hypervisor/arceos)
 * Used for **SMP** testing
 * It supports the x86_64, aarch64, and riscv64 architectures
-* Configuration file templates at [arceos-aarch64.toml](../arceos-vmm/configs/arceos-aarch64.toml), [arceos-x86_64.toml](../arceos-vmm/configs/arceos-x86_64.toml), and [arceos-riscv64.toml](../arceos-vmm/configs/arceos-riscv64.toml)
+* Configuration file templates at [arceos-aarch64.toml](../configs/arceos-aarch64.toml), [arceos-x86_64.toml](../configs/arceos-x86_64.toml), and [arceos-riscv64.toml](../configs/arceos-riscv64.toml)
 
 ### Testcases
 

@@ -23,7 +23,7 @@ jobs:
       run: rustc --version --verbose
     - name: Clippy arceos-vmm
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make -C arceos-vmm ARCH=${{ matrix.arch }} clippy
+      run: make ARCH=${{ matrix.arch }} clippy
 
   fmt:
     runs-on: ubuntu-latest
@@ -66,4 +66,4 @@ jobs:
     - run: cargo install cargo-binutils
     - name: Build arceos-vmm
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make -C arceos-vmm ARCH=${{ matrix.arch }} build
+      run: make ARCH=${{ matrix.arch }} build
