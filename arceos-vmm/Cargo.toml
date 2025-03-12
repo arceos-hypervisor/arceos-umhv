@@ -35,10 +35,15 @@ axaddrspace = { workspace = true }
 # System independent crates provided by ArceOS, these crates could be imported by remote url. 
 crate_interface = "0.1"
 axerrno = "0.1.0"
+cpumask = "0.1.0"
+kernel_guard = "0.1"
 memory_addr = "0.3"
 page_table_entry = { version = "0.5", features = ["arm-el2"] }
 page_table_multiarch = "0.5"
 percpu = { version = "0.1.4", features = ["arm-el2"] }
+
+axdevice = { path = "../../axdevice" }
+axdevice_base = { path = "../../axdevice_crates/axdevice_base" }
 
 [build-dependencies]
 toml = { git = "https://github.com/arceos-hypervisor/toml.git", branch = "no_std" }

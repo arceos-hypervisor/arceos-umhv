@@ -8,9 +8,22 @@ exclude = ["crates"]
 lto = true
 
 [workspace.dependencies]
-axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm" }
-axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm" }
+axstd = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_inject_interrupt", features = ["ipi", "smp"] }
+axconfig = { git = "https://github.com/arceos-hypervisor/arceos.git", branch = "vmm_inject_interrupt" }
 
-axvm = { git = "https://github.com/arceos-hypervisor/axvm.git" }
-axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git" }
-axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git" }
+axvm = { git = "https://github.com/arceos-hypervisor/axvm.git", branch = "inject_interrupt" }
+axvcpu = { git = "https://github.com/arceos-hypervisor/axvcpu.git", branch = "inject_interrupt" }
+axaddrspace = { git = "https://github.com/arceos-hypervisor/axaddrspace.git", branch = "inject_interrupt" }
+
+[patch."https://github.com/arceos-hypervisor/axvm.git"]
+axvm = { path = "../axvm" }
+
+[patch."https://github.com/arceos-hypervisor/axdevice.git"]
+axdevice = { path = "../axdevice" }
+
+[patch."https://github.com/arceos-hypervisor/axdevice_crates.git"]
+axdevice_base = { path = "../axdevice_crates/axdevice_base" }
+
+[patch."https://github.com/arceos-hypervisor/arceos.git"]
+axstd = { path = "../arceos-new/ulib/axstd", features = ["ipi", "smp"] }
+axconfig = { path = "../arceos-new/modules/axconfig" }
