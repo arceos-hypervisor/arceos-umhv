@@ -16,6 +16,9 @@
 //! If the `UMHV_VM_CONFIGS` environment variable is set but the configuration files cannot be
 //! read, the build script will output a `compile_error!` macro that will cause the build to
 //! fail.
+//! 
+//! A function `get_memory_images` is also provided to get every vm image from the
+//! configuration files.
 //!
 //! This build script reruns if the `UMHV_VM_CONFIGS` environment variable changes, or if the
 //! `build.rs` file changes, or if any of the files in the paths specified by `UMHV_VM_CONFIGS`
