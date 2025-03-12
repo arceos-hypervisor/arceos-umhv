@@ -142,8 +142,6 @@ fn parse_config_file(config_file: &ConfigFile) -> Option<MemoryImage> {
 
 /// Generate function to load guest images from config
 /// Toml file must be provided to load from memory.
-/// Only load the first config item, if there are multiple items in the config file.
-/// Other VMs are dynamically loaded from the file system by the first VM that starts.
 fn generate_guest_img_loading_functions(
     out_file: &mut fs::File,
     config_files: Vec<ConfigFile>,
@@ -162,7 +160,7 @@ fn generate_guest_img_loading_functions(
                 None => quote! { None },
             };
 
-            let bois = match files.bios {
+            let bios = match files.bios {
                 Some(v) => {
                     let s = v.display().to_string();
                     quote! { Some(include_bytes!(#s)) }
@@ -175,20 +173,26 @@ fn generate_guest_img_loading_functions(
                     id: #id,
                     kernel: include_bytes!(#kernel),
                     dtb: #dtb,
-                    bios: #bois,
+                    bios: #bios,
                 }
             });
         }
     }
 
     let output = quote! {
+        /// One guest image data from memory.
         pub struct MemoryImage{
+            /// vm id in config file
             pub id: usize,
+            /// kernel image
             pub kernel: &'static [u8],
+            /// dtb image
             pub dtb: Option<&'static [u8]>,
+            /// bios image
             pub bios: Option<&'static [u8]>,
         }
 
+        /// Get memory images from config file.
         pub fn get_memory_images() -> &'static [MemoryImage] {
             &[
                 #(#memory_images),*
