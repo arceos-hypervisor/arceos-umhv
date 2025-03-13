@@ -256,4 +256,7 @@ This project exists thanks to all the people who contribute.
 
 AxVisor uses the following open-source license:
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * Apache License, Version 2.0
+ * MulanPubL-2.0
+ * MulanPSL2
+ * GPL-3.0-or-later
