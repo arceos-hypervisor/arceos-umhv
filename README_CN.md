@@ -257,7 +257,7 @@ AxVisor 作为组件化的虚拟机管理程序，很多组件是作为 Crate �
 
 AxVisor 使用如下开源协议
 
- * Apache License, Version 2.0
+ * Apache-2.0
  * MulanPubL-2.0
  * MulanPSL2
  * GPL-3.0-or-later
